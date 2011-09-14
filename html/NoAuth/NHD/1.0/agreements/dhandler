@@ -1,0 +1,55 @@
+<%ARGS>
+$uuid => undef
+$name => undef
+$receiver_url => undef
+$sender_url => undef
+$access_key => undef
+$status => undef
+</%ARGS>
+<%INIT>
+my $duuid = $m->dhandler_arg;
+if ( !RT::Extension::NHD->CheckUUID( $duuid ) || ($uuid||'') ne $duuid ) {
+    return RT::Extension::NHD->BadWebRequest('Unprocessable Entity');
+}
+
+my $token = $r->headers_in->{'X-Ticket-Sharing-Token'};
+return RT::Extension::NHD->BadWebRequest('Authorization Required')
+    unless $token;
+
+my $agreement = RT::NHD::Agreement->new( RT->SystemUser );
+$agreement->Load( $uuid );
+return RT::Extension::NHD->BadWebRequest('Not Found')
+    if !$agreement->id && $action ne 'create';
+
+if ( $token ne join ':', ($agreement->UUID || $uuid), ($agreement->AccessKey || $access_key) ) {
+    return RT::Extension::NHD->BadWebRequest('Forbidden')
+}
+
+my $action = RT::Extension::NHD->WebRequestAction;
+return RT::Extension::NHD->BadWebRequest('Unprocessable Entity')
+    unless $action;
+
+if ( $agreement->id ) {
+    if ( $action eq 'show' ) {
+        return RT::Extension::NHD->WebSendJSON( $agreement->ForJSON );
+    }
+    elsif ( $action eq 'update' ) {
+        my ($status, $msg) = $agreement->UpdateBySender( %{ $agreement->FromJSON( \%ARGS ) } );
+        unless ( $status ) {
+            RT->Logger->error("Couldn't update NHD agreement: $msg");
+            return RT::Extension::NHD->BadWebRequest('Unprocessable Entity');
+        }
+        return RT::Extension::NHD->GoodWebRequest;
+    }
+    else {
+    }
+}
+else {
+    my ($status, $msg) = $agreement->Create( %{ $agreement->FromJSON( \%ARGS ) } );
+    unless ( $status ) {
+        RT->Logger->error("Couldn't create NHD agreement: $msg");
+        return RT::Extension::NHD->BadWebRequest('Unprocessable Entity');
+    }
+    return RT::Extension::NHD->GoodWebRequest('Created');
+}
+</%INIT>

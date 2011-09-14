@@ -1,0 +1,11 @@
+* should it /sharing only, can it be /xxx/sharing
+
+* how to define point of entry, eg reciever URL?
+
+* in section "Creating a Ticket Sharing Agreement" text
+  says "requester MUST include a X-Ticket-Sharing-Token",
+  but example has no such header.
+
+* Why content type of requests and responses is not 'text/x-json'?
+
+* is access_key of agreement mutable?

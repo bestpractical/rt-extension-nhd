@@ -1,0 +1,13 @@
+CREATE TABLE NHDAgreements (
+  id INTEGER NOT NULL  AUTO_INCREMENT,
+  UUID varchar(48) CHARACTER SET ascii NOT NULL,
+  Name varchar(200) NOT NULL,
+  Status varchar(64) CHARACTER SET ascii NOT NULL,
+  Sender varchar(240) CHARACTER SET ascii NOT NULL,
+  Receiver varchar(240) CHARACTER SET ascii NOT NULL,
+  AccessKey varchar(40) CHARACTER SET ascii NOT NULL,
+
+  PRIMARY KEY (id)
+) ENGINE=InnoDB CHARACTER SET utf8;
+
+CREATE UNIQUE INDEX NHDAgreements1 ON NHDAgreements(UUID);
