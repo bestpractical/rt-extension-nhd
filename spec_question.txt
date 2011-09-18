@@ -1,4 +1,4 @@
-* should it /sharing only, can it be /xxx/sharing
+* should it be /sharing only, can it be /xxx/sharing?
 
 * how to define point of entry, eg reciever URL?
 
@@ -9,3 +9,7 @@
 * Why content type of requests and responses is not 'text/x-json'?
 
 * is access_key of agreement mutable?
+
+* in section "Retrieving a Ticket Sharing Agreement"
+  code for "Method Not Allowed" HTTP status is wrong.
+  It should be 405, but it's 406.
