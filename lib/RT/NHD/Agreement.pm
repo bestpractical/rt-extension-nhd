@@ -45,7 +45,7 @@ sub _ValidateURI {
 
 sub FromJSON {
     my $self = shift;
-    my $args = @_;
+    my ($args) = @_;
 
     return {
         UUID => $args->{'uuid'},
