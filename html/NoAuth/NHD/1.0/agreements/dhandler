@@ -16,7 +16,7 @@ unless ( RT::Extension::NHD->CheckUUID( $duuid ) ) {
 }
 
 my $action = RT::Extension::NHD->WebRequestAction;
-return RT::Extension::NHD->BadWebRequest('Unprocessable Entity', "Unsupported method of the request")
+return RT::Extension::NHD->BadWebRequest('Method Not Allowed')
     unless $action;
 
 my $token = $r->headers_in->{'X-Ticket-Sharing-Token'};

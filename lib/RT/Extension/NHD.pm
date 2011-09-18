@@ -40,6 +40,7 @@ my %HTTP_CODE = (
     'Unauthorized' => 401,
     'Forbidden' => 403,
     'Not Found' => 404,
+    'Method Not Allowed' => 405,
     'Precondition Failed' => 412,
     'Unprocessable Entity' => 422,
 );
