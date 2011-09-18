@@ -20,7 +20,9 @@ sub json_request {
     my $self = shift;
     my ($method, $uri, %args) = @_;
     $uri = $self->rt_base_url .'NoAuth/NHD/1.0'. $uri;
-    my $data = RT::Extension::NHD->ToJSON( delete $args{'data'} );
+    my $data;
+    $data = RT::Extension::NHD->ToJSON( delete $args{'data'} )
+        unless $method eq 'GET';
     my %headers = %{ $args{'headers'}||{}};
     %headers = (
         %headers,
