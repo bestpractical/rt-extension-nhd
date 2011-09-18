@@ -19,6 +19,15 @@ my $action = RT::Extension::NHD->WebRequestAction;
 return RT::Extension::NHD->BadWebRequest('Method Not Allowed')
     unless $action;
 
+if ( $action ne 'create' ) {
+    $ARGS{'uuid'} = $uuid ||= $duuid;
+} elsif ( ($uuid||'') ne $duuid ) {
+    return RT::Extension::NHD->BadWebRequest(
+        'Unprocessable Entity',
+        "UUIDs in the URI and body don't match"
+    );
+}
+
 my $token = $r->headers_in->{'X-Ticket-Sharing-Token'};
 return RT::Extension::NHD->BadWebRequest('Unauthorized')
     unless $token;
@@ -50,12 +59,6 @@ if ( $agreement->id ) {
     }
 }
 elsif ( $action eq 'create' ) {
-    if (($uuid||'') ne $duuid ) {
-        return RT::Extension::NHD->BadWebRequest(
-            'Unprocessable Entity',
-            "UUIDs in the URI and body don't match"
-        );
-    }
     my ($status, $msg) = $agreement->Create( %{ $agreement->FromJSON( \%ARGS ) } );
     unless ( $status ) {
         RT->Logger->error("Couldn't create NHD agreement: $msg");
