@@ -80,6 +80,7 @@ sub WebSendJSON {
     my $status = shift || 'OK';
 
     $HTML::Mason::Commands::r->content_type( "text/x-json; charset=UTF-8" );
+    $HTML::Mason::Commands::m->out( $self->ToJSON( $data ) ) if $data;
     return $self->GoodWebRequest( $status );
 }
 
