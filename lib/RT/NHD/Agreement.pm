@@ -13,7 +13,7 @@ sub Table {'NHDAgreements'}
 sub Load {
     my $self = shift;
     my $value = shift;
-    if ( $value && $value =~ /^[0-9a-f]{40}$/i ) {
+    if ( RT::Extension::NHD->CheckUUID($value) ) {
         return $self->LoadByCols( @_, UUID => $value );
     }
     return $self->SUPER::Load( $value, @_ );
