@@ -8,26 +8,30 @@ $status => undef
 </%ARGS>
 <%INIT>
 my $duuid = $m->dhandler_arg;
-if ( !RT::Extension::NHD->CheckUUID( $duuid ) || ($uuid||'') ne $duuid ) {
-    return RT::Extension::NHD->BadWebRequest('Unprocessable Entity');
+unless ( RT::Extension::NHD->CheckUUID( $duuid ) ) {
+    return RT::Extension::NHD->BadWebRequest(
+        'Unprocessable Entity',
+        "Value in the URI isn't a UUID"
+    );
 }
 
+my $action = RT::Extension::NHD->WebRequestAction;
+return RT::Extension::NHD->BadWebRequest('Unprocessable Entity', "Unsupported method of the request")
+    unless $action;
+
 my $token = $r->headers_in->{'X-Ticket-Sharing-Token'};
-return RT::Extension::NHD->BadWebRequest('Authorization Required')
+return RT::Extension::NHD->BadWebRequest('Unauthorized')
     unless $token;
 
 my $agreement = RT::NHD::Agreement->new( RT->SystemUser );
 $agreement->Load( $uuid );
+
 return RT::Extension::NHD->BadWebRequest('Not Found')
     if !$agreement->id && $action ne 'create';
 
-if ( $token ne join ':', ($agreement->UUID || $uuid), ($agreement->AccessKey || $access_key) ) {
+if ( $token ne join ':', ($agreement->UUID || $uuid || $duuid), ($agreement->AccessKey || $access_key) ) {
     return RT::Extension::NHD->BadWebRequest('Forbidden')
 }
-
-my $action = RT::Extension::NHD->WebRequestAction;
-return RT::Extension::NHD->BadWebRequest('Unprocessable Entity')
-    unless $action;
 
 if ( $agreement->id ) {
     if ( $action eq 'show' ) {
@@ -42,14 +46,24 @@ if ( $agreement->id ) {
         return RT::Extension::NHD->GoodWebRequest;
     }
     else {
+        return RT::Extension::NHD->BadWebRequest;
     }
 }
-else {
+elsif ( $action eq 'create' ) {
+    if (($uuid||'') ne $duuid ) {
+        return RT::Extension::NHD->BadWebRequest(
+            'Unprocessable Entity',
+            "UUIDs in the URI and body don't match"
+        );
+    }
     my ($status, $msg) = $agreement->Create( %{ $agreement->FromJSON( \%ARGS ) } );
     unless ( $status ) {
         RT->Logger->error("Couldn't create NHD agreement: $msg");
         return RT::Extension::NHD->BadWebRequest('Unprocessable Entity');
     }
     return RT::Extension::NHD->GoodWebRequest('Created');
+}
+else {
+    return RT::Extension::NHD->BadWebRequest;
 }
 </%INIT>

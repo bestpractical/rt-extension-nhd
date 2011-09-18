@@ -1,15 +1,21 @@
 <%INIT>
 my $version = $r->headers_in->{'X-Ticket-Sharing-Version'};
-if ( $version || $version ne '1' ) {
+if ( ($version||'') ne '1' ) {
     return RT::Extension::NHD->BadWebRequest('Precondition Failed');
 }
 
-my $ct = $r->content_type;
+my $ct = $r->headers_in->{'Content-Type'};
 my $method = uc $r->method;
 
 my $data;
 if ( $method ne 'GET' && (!$ct || $ct =~ m{^text/x-json}) ) {
-    $data = RT::Extension::NHD->FromJSON( $r->content );
+
+    # dirty hack to get data
+    my $input = $r->query->env->{'psgi.input'};
+    seek $input, 0, 0;
+    my $content = do { local $/; <$input> };
+
+    $data = RT::Extension::NHD->FromJSON( $content );
     return RT::Extension::NHD->BadWebRequest unless $data;
 }
 

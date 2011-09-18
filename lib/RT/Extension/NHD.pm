@@ -14,6 +14,15 @@ RT::Extension::NHD - Networked Help Desk protocol for Request Tracker
 =cut
 
 use RT::NHD::Agreement;
+use JSON::Any;
+
+sub FromJSON {
+    return JSON::Any->new->from_json( $_[1] );
+}
+
+sub ToJSON {
+    return JSON::Any->new->to_json( $_[1] );
+}
 
 sub CheckUUID {
     my $self = shift;
@@ -23,18 +32,16 @@ sub CheckUUID {
     return 1;
 }
 
-#XXX
 my %HTTP_CODE = (
     'OK' => 200,
     'Created' => 201,
 
     'Bad Request' => 400,
-    'Precondition Failed' => 400,
-    'Unprocessable Entity' => 400,
+    'Unauthorized' => 401,
+    'Forbidden' => 403,
     'Not Found' => 404,
-    'Forbidden' => 400,
-    'Authorization Required' => 400,
-
+    'Precondition Failed' => 412,
+    'Unprocessable Entity' => 422,
 );
 
 sub BadWebRequest {
@@ -55,9 +62,9 @@ sub StopWebRequest {
     my $code = $HTTP_CODE{ $info } or die "Bad status $info";
     $HTML::Mason::Commands::r->headers_out->{'Status'} = "$code $info";
     if ( $code =~ /^2..$/ ) {
-        $HTML::Mason::Commands::m->abort;
+        $HTML::Mason::Commands::m->abort( $code );
     } else {
-        $HTML::Mason::Commands::m->clear_and_abort;
+        $HTML::Mason::Commands::m->clear_and_abort( $code );
     }
 }
 

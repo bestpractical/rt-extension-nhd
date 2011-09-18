@@ -12,7 +12,7 @@ use Digest::SHA1 qw(sha1_hex);
     isa_ok($agreement, 'RT::Record');
 }
 
-my $i;
+my $i = 0;
 
 {
     my $uuid = sha1_hex( ''. ++$i );

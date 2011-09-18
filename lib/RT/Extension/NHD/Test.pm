@@ -22,4 +22,10 @@ sub import {
     $class->export_to_level(1);
 }
 
+sub new_agent {
+    my $self = shift;
+    require RT::Extension::NHD::Test::Web;
+    return  RT::Extension::NHD::Test::Web->new_agent( @_ );
+}
+
 1;
