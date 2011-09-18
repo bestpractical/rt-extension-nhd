@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use RT::Extension::NHD::Test tests => 17;
+use RT::Extension::NHD::Test tests => 18;
 use Digest::SHA1 qw(sha1_hex);
 
 RT::Extension::NHD::Test->started_ok;
@@ -45,6 +45,11 @@ my $i = 0;
 
     $response = $m->json_request( GET => '/agreements/'. $uuid );
     is( $response->code, 401, 'auth required' );
+    like(
+        $response->header('WWW-Authenticate'),
+        qr/\bX-Ticket-Sharing\b/,
+        'WWW-Authenticate header is there'
+    );
 
     $response = $m->json_request(
         GET => '/agreements/'. $uuid,

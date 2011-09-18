@@ -60,8 +60,15 @@ sub GoodWebRequest {
 sub StopWebRequest {
     my $self = shift;
     my $info = shift;
+
     my $code = $HTTP_CODE{ $info } or die "Bad status $info";
-    $HTML::Mason::Commands::r->headers_out->{'Status'} = "$code $info";
+
+    my $r = $HTML::Mason::Commands::r;
+    $r->headers_out->{'Status'} = "$code $info";
+    if ( $code == 401 ) {
+        $r->headers_out->{'WWW-Authenticate'} = 'X-Ticket-Sharing';
+    }
+
     if ( $code =~ /^2..$/ ) {
         $HTML::Mason::Commands::m->abort( $code );
     } else {
