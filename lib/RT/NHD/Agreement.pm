@@ -19,6 +19,17 @@ sub Load {
     return $self->SUPER::Load( $value, @_ );
 }
 
+sub Create {
+    my $self = shift;
+    my %args = @_;
+
+    my $status = $args{'Status'};
+    unless ( ($status||'') eq 'pending' ) {
+        return (undef, "New agreement must have 'pending' status");
+    }
+    return $self->SUPER::Create( %args );
+}
+
 sub ValidateUUID { return RT::Extension::NHD->CheckUUID( $_[1] ) }
 sub ValidateAccessKey { return RT::Extension::NHD->CheckUUID( $_[1] ) }
 
