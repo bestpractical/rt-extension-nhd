@@ -13,3 +13,6 @@
 * in section "Retrieving a Ticket Sharing Agreement"
   code for "Method Not Allowed" HTTP status is wrong.
   It should be 405, but it's 406.
+
+* There are two sections "Retrieving a Ticket Sharing Agreement"
+  in the spec. Second one should be renamed - "Retrieving a Ticket".
