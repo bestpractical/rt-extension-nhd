@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use RT::Extension::NHD::Test tests => 14;
+use RT::Extension::NHD::Test tests => 17;
 use Digest::SHA1 qw(sha1_hex);
 
 RT::Extension::NHD::Test->started_ok;
@@ -42,4 +42,27 @@ my $i = 0;
     is( $agreement->Sender, 'http://hoster.example.com/sharing', 'correct value' );
     is( $agreement->Receiver, 'http://rt.example.com/sharing', 'correct value' );
     like( $agreement->AccessKey, qr{^[0-9a-f]{40}$}i, 'correct value' );
+
+    $response = $m->json_request( GET => '/agreements/'. $uuid );
+    is( $response->code, 401, 'auth required' );
+
+    $response = $m->json_request(
+        GET => '/agreements/'. $uuid,
+        headers => {
+            'X-Ticket-Sharing-Token' => "$uuid:$access_key",
+        },
+    );
+    is( $response->code, 200, 'got agreement' );
+    is_deeply(
+        RT::Extension::NHD->FromJSON( $response->content ),
+        {
+            uuid => $uuid,
+            name => 'Test Company',
+            status => 'pending',
+            sender_url => 'http://hoster.example.com/sharing',
+            receiver_url => 'http://rt.example.com/sharing',
+            access_key => $access_key,
+        },
+        'correct agreement',
+    );
 }
