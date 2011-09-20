@@ -25,7 +25,7 @@ my $i = 0;
             name => 'Test Company',
             status => 'pending',
             sender_url => 'http://hoster.example.com/sharing',
-            receiver_url => 'http://rt.example.com/sharing',
+            receiver_url => RT->Config->Get('NHD_WebURL'),
             access_key => $access_key,
         },
     );
@@ -40,7 +40,7 @@ my $i = 0;
     is( $agreement->Name, 'Test Company', 'correct value' );
     is( $agreement->Status, 'pending', 'correct value' );
     is( $agreement->Sender, 'http://hoster.example.com/sharing', 'correct value' );
-    is( $agreement->Receiver, 'http://rt.example.com/sharing', 'correct value' );
+    is( $agreement->Receiver, RT->Config->Get('NHD_WebURL'), 'correct value' );
     like( $agreement->AccessKey, qr{^[0-9a-f]{40}$}i, 'correct value' );
 
     $response = $m->json_request( GET => '/agreements/'. $uuid );
@@ -65,7 +65,7 @@ my $i = 0;
             name => 'Test Company',
             status => 'pending',
             sender_url => 'http://hoster.example.com/sharing',
-            receiver_url => 'http://rt.example.com/sharing',
+            receiver_url => RT->Config->Get('NHD_WebURL'),
             access_key => $access_key,
         },
         'correct agreement',

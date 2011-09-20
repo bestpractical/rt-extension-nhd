@@ -23,7 +23,7 @@ my $i = 0;
         Name => 'Test Company',
         Status => 'pending',
         Sender => 'http://hoster.example.com/sharing',
-        Receiver => 'http://rt.example.com/sharing',
+        Receiver => RT->Config->Get('NHD_WebURL'),
         AccessKey => sha1_hex( ''. ++$i ),
     );
     ok($id, "Created an agreement $uuid");
@@ -36,7 +36,7 @@ my $i = 0;
     is( $agreement->Name, 'Test Company', 'correct value' );
     is( $agreement->Status, 'pending', 'correct value' );
     is( $agreement->Sender, 'http://hoster.example.com/sharing', 'correct value' );
-    is( $agreement->Receiver, 'http://rt.example.com/sharing', 'correct value' );
+    is( $agreement->Receiver, RT->Config->Get('NHD_WebURL'), 'correct value' );
     like( $agreement->AccessKey, qr{^[0-9a-f]{40}$}i, 'correct value' );
 }
 
@@ -49,7 +49,7 @@ my $i = 0;
         Name => 'Test Company',
         Status => 'booo',
         Sender => 'http://hoster.example.com/sharing',
-        Receiver => 'http://rt.example.com/sharing',
+        Receiver => RT->Config->Get('NHD_WebURL'),
         AccessKey => sha1_hex( ''. ++$i ),
     );
     ok(!$id, "Couldn't create an agreement $uuid: $msg");
@@ -64,7 +64,7 @@ my $i = 0;
         Name => 'Test Company',
         Status => 'accepted',
         Sender => 'http://hoster.example.com/sharing',
-        Receiver => 'http://rt.example.com/sharing',
+        Receiver => RT->Config->Get('NHD_WebURL'),
         AccessKey => sha1_hex( ''. ++$i ),
     );
     ok(!$id, "Couldn't create an agreement $uuid: $msg");

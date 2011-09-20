@@ -23,9 +23,12 @@ sub Create {
     my $self = shift;
     my %args = @_;
 
-    my $status = $args{'Status'};
-    unless ( ($status||'') eq 'pending' ) {
+    unless ( ($args{'Status'}||'') eq 'pending' ) {
         return (undef, "New agreement must have 'pending' status");
+    }
+    my $our_url = RT->Config->Get('NHD_WebURL');
+    if ( ($args{'Sender'}||'') ne $our_url && ($args{'Receiver'}||'') ne $our_url ) {
+        return (undef, "Either sender or receiver should be '$our_url'");
     }
     return $self->SUPER::Create( %args );
 }
