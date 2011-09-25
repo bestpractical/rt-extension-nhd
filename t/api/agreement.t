@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use RT::Extension::NHD::Test tests => 25;
+use RT::Extension::NHD::Test tests => 23;
 use Digest::SHA1 qw(sha1_hex);
 
 {
@@ -68,5 +68,54 @@ my $i = 0;
         AccessKey => sha1_hex( ''. ++$i ),
     );
     ok(!$id, "Couldn't create an agreement $uuid: $msg");
+}
+
+# simple update
+{
+    my $agreement = RT::NHD::Agreement->new( RT->SystemUser );
+    my $uuid = sha1_hex( ''. ++$i );
+    my ($id, $msg) = $agreement->Create(
+        UUID => $uuid,
+        Name => 'Test Company',
+        Status => 'pending',
+        Sender => 'http://hoster.example.com/sharing',
+        Receiver => RT->Config->Get('NHD_WebURL'),
+        AccessKey => sha1_hex( ''. ++$i ),
+    );
+    ok($id, "Created an agreement") or diag "error: $msg";
+
+    my ($status, $msg) = $agreement->Update(
+        Sender =>
+        Sender => 'http://hoster.moved.com/sharing',
+        AccessKey => sha1_hex( ''. ++$i ),
+    );
+    ok $status, 'updated URL of the sender by sender';
+    is( $agreement->Sender, 'http://hoster.moved.com/sharing', 'correct value' );
+    is( $agreement->AccessKey, sha1_hex( ''. $i ), 'correct value' );
+}
+
+# update with error
+{
+    my $agreement = RT::NHD::Agreement->new( RT->SystemUser );
+    my $uuid = sha1_hex( ''. ++$i );
+    my ($id, $msg) = $agreement->Create(
+        UUID => $uuid,
+        Name => 'Test Company',
+        Status => 'pending',
+        Sender => 'http://hoster.example.com/sharing',
+        Receiver => RT->Config->Get('NHD_WebURL'),
+        AccessKey => sha1_hex( ''. ++$i ),
+    );
+    ok($id, "Created an agreement") or diag "error: $msg";
+
+    my ($status, $msg) = $agreement->Update(
+        Sender =>
+        Sender => 'http://hoster.moved.com/sharing',
+        AccessKey => 'bad access key',
+    );
+    ok !$status, "updated failed: $msg";
+    # make sure we're transactional
+    is( $agreement->Sender, 'http://hoster.example.com/sharing', 'correct value' );
+    is( $agreement->AccessKey, sha1_hex( ''. $i ), 'correct value' );
 }
 

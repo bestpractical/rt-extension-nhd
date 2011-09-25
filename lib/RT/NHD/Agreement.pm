@@ -33,6 +33,79 @@ sub Create {
     return $self->SUPER::Create( %args );
 }
 
+sub Update {
+    my $self = shift;
+    my $by = shift;
+    my %args = @_;
+
+    unless ( $by eq 'Receiver' || $by eq 'Sender' ) {
+        return (0, "First argument should be either 'Sender' or 'Receiver'");
+    }
+
+    # filter out repeated values even if spec says update should only
+    # enlist new values
+    foreach my $field ( grep $_ ne 'id', keys %{ $self->TableAttributes } ) {
+        next unless exists $args{ $field };
+
+        my $cur = $self->$field();
+        my $new = $args{ $field };
+        next if (defined $new && !defined $cur)
+            || (!defined $new && defined $cur)
+            || $new ne $cur;
+
+        delete $args{ $field };
+    }
+
+    return (0, 'UUID can not be changed') if exists $args{'UUID'};
+
+    if ( $by eq 'Sender' ) {
+        return (0, 'Only receiver may change its URL')
+            if exists $args{'Receiver'};
+    } else {
+        return (0, 'Only sender may change Name')
+            if exists $args{'Name'};
+        return (0, 'Only sender may change its URL')
+            if exists $args{'Sender'};
+    }
+
+    if ( exists $args{'Status'} ) {
+        my $cur = $self->Status;
+        my $new = $args{'Status'} || '';
+
+        # XXX: not yet implemented
+    }
+
+    if ( exists $args{'DeactivatedBy'} ) {
+        return (0, 'DeactivatedBy can be changed only with Status')
+            unless exists $args{'Status'};
+
+        if ( $args{'Status'} eq 'inactive' ) {
+            return (0, "Inactivating agreement, DeactivatedBy should be \L$by")
+                unless lc $args{'DeactivatedBy'} eq lc $by;
+        }
+        elsif ( $self->Status eq 'inactive' ) {
+            return (0, "Re-activating agreement, DeactivatedBy should be set to empty")
+                if $args{'DeactivatedBy'};
+        }
+        else {
+            return (0, "Can not set DeactivatedBy when change status from '". $self->Status ."' to '$args{'Status'}'");
+        }
+    }
+
+
+    $RT::Handle->BeginTransaction;
+    foreach my $field ( grep $_ ne 'id', keys %{ $self->TableAttributes } ) {
+        next unless exists $args{ $field };
+
+        my $method = "Set$field";
+        my ($status, $msg) = $self->$method( $args{ $field } );
+        return $self->RollbackTransaction( "Couldn't update $field: $msg" )
+            unless $status;
+    }
+    $RT::Handle->Commit;
+    return (1, 'Updated');
+}
+
 sub ValidateUUID { return RT::Extension::NHD->CheckUUID( $_[1] ) }
 sub ValidateAccessKey { return RT::Extension::NHD->CheckUUID( $_[1] ) }
 
@@ -92,6 +165,24 @@ sub ForJSON {
         access_key => $self->AccessKey,
         deactivated_by => $self->DeactivatedBy,
     };
+}
+
+sub TableAttributes {
+    my $self = shift;
+    my $class = ref($self) || $self;
+    $self->_BuildTableAttributes unless $RT::Record::_TABLE_ATTR->{ $class };
+    return $RT::Record::_TABLE_ATTR->{ $class };
+}
+
+sub RollbackTransaction {
+    my $self = shift;
+    my $msg = shift;
+
+    $RT::Handle->Rollback;
+
+    $self->LoadByCols( id => $self->id );
+
+    return (0, $msg);
 }
 
 sub _CoreAccessible { return {
