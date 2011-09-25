@@ -45,6 +45,15 @@ sub ValidateStatus {
     return 1;
 }
 
+sub ValidateDeactivatedBy {
+    my $self = shift;
+    my $value = shift;
+
+    return 1 unless $value;
+    return 0 unless grep $_ eq lc $value, 'sender', 'receiver';
+    return 1;
+}
+
 sub ValidateSender { return (shift)->_ValidateURI( @_ ) }
 sub ValidateReceiver { return (shift)->_ValidateURI( @_ ) }
 
@@ -68,6 +77,7 @@ sub FromJSON {
         Sender => $args->{'sender_url'},
         Receiver => $args->{'receiver_url'},
         AccessKey => $args->{'access_key'},
+        DeactivatedBy => $args->{'deactivated_by'},
     };
 }
 
@@ -80,6 +90,7 @@ sub ForJSON {
         sender_url => $self->Sender,
         receiver_url => $self->Receiver,
         access_key => $self->AccessKey,
+        deactivated_by => $self->DeactivatedBy,
     };
 }
 
@@ -98,6 +109,8 @@ sub _CoreAccessible { return {
     {read => 1, write => 1, sql_type => 12, length => 240, is_blob => 0, is_numeric => 0, type => 'varchar(240)', default => ''},
     AccessKey =>
     {read => 1, write => 1, sql_type => 12, length => 40, is_blob => 0, is_numeric => 0, type => 'varchar(40)', default => ''},
+    DeactivatedBy =>
+    {read => 1, write => 1, sql_type => 10, length => 15, is_blob => 0, is_numeric => 0, type => 'varchar(10)', default => ''},
 } }
 
 RT::Base->_ImportOverlays();

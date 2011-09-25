@@ -6,6 +6,7 @@ CREATE TABLE NHDAgreements (
   Sender varchar(240) CHARACTER SET ascii NOT NULL,
   Receiver varchar(240) CHARACTER SET ascii NOT NULL,
   AccessKey varchar(40) CHARACTER SET ascii NOT NULL,
+  DeactivatedBy varchar(10) CHARACTER SET ascii NULL DEFAULT NULL,
 
   PRIMARY KEY (id)
 ) ENGINE=InnoDB CHARACTER SET utf8;
