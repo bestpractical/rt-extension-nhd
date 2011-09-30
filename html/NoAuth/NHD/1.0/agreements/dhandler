@@ -35,19 +35,38 @@ return RT::Extension::NHD->BadWebRequest('Unauthorized')
 my $agreement = RT::NHD::Agreement->new( RT->SystemUser );
 $agreement->Load( $uuid );
 
-return RT::Extension::NHD->BadWebRequest('Not Found')
-    if !$agreement->id && $action ne 'create';
+if ( $action eq 'create' && $agreement->id ) {
+    return RT::Extension::NHD->BadWebRequest(
+        'Unprocessable Entity',
+        "Couldn't create an agreement: record already exists"
+    );
+}
+elsif ( $action ne 'create' ) {
+    return RT::Extension::NHD->BadWebRequest('Not Found')
+        unless $agreement->id;
 
-if ( $token ne join ':', ($agreement->UUID || $uuid || $duuid), ($agreement->AccessKey || $access_key) ) {
-    return RT::Extension::NHD->BadWebRequest('Forbidden')
+    if ( $token ne join ':', $agreement->UUID, $agreement->AccessKey ) {
+        return RT::Extension::NHD->BadWebRequest('Forbidden')
+    }
 }
 
+my %data = %{ $agreement->FromJSON( \%ARGS ) };
+
+my ($user, $msg) = $agreement->LoadOrCreateUser( %data );
+return RT::Extension::NHD->BadWebRequest(
+    'Unprocessable Entity',
+    "Couldn't create user: $msg"
+) unless $user;
+
+$agreement->CurrentUser( RT::CurrentUser->new( $user ) );
+
 if ( $agreement->id ) {
+
     if ( $action eq 'show' ) {
         return RT::Extension::NHD->WebSendJSON( $agreement->ForJSON );
     }
     elsif ( $action eq 'update' ) {
-        my ($status, $msg) = $agreement->UpdateBySender( %{ $agreement->FromJSON( \%ARGS ) } );
+        my ($status, $msg) = $agreement->Update( %data );
         unless ( $status ) {
             RT->Logger->error("Couldn't update NHD agreement: $msg");
             return RT::Extension::NHD->BadWebRequest('Unprocessable Entity');
@@ -58,15 +77,12 @@ if ( $agreement->id ) {
         return RT::Extension::NHD->BadWebRequest;
     }
 }
-elsif ( $action eq 'create' ) {
-    my ($status, $msg) = $agreement->Create( %{ $agreement->FromJSON( \%ARGS ) } );
+else {
+    my ($status, $msg) = $agreement->Create( %data );
     unless ( $status ) {
         RT->Logger->error("Couldn't create NHD agreement: $msg");
         return RT::Extension::NHD->BadWebRequest('Unprocessable Entity');
     }
     return RT::Extension::NHD->GoodWebRequest('Created');
-}
-else {
-    return RT::Extension::NHD->BadWebRequest;
 }
 </%INIT>

@@ -23,24 +23,41 @@ sub Create {
     my $self = shift;
     my %args = @_;
 
+    my $we_are = $self->WhoWeAre( %args );
+    unless ( $we_are ) {
+        return (undef, "Either sender or receiver should be '". RT->Config->Get('NHD_WebURL') ."'");
+    }
+
+    my $by = $self->WhoIsCurrentUser( %args );
+    unless ( $by ) {
+        return (0, "Current user is not a sender or receiver");
+    }
+
     unless ( ($args{'Status'}||'') eq 'pending' ) {
         return (undef, "New agreement must have 'pending' status");
     }
-    my $our_url = RT->Config->Get('NHD_WebURL');
-    if ( ($args{'Sender'}||'') ne $our_url && ($args{'Receiver'}||'') ne $our_url ) {
-        return (undef, "Either sender or receiver should be '$our_url'");
+
+    my @rv = $self->SUPER::Create( %args );
+
+    if ( $we_are eq $by ) {
+        my ($status, $msg) = $self->SendUpdate;
+        return $self->RollbackTransaction( "Couldn't send update to remote host: $msg" )
+            unless $status;
     }
-    return $self->SUPER::Create( %args );
+
+    return @rv;
 }
 
 sub Update {
     my $self = shift;
-    my $by = shift;
     my %args = @_;
 
-    unless ( $by eq 'Receiver' || $by eq 'Sender' ) {
-        return (0, "First argument should be either 'Sender' or 'Receiver'");
+    my $by = $self->WhoIsCurrentUser;
+    unless ( $by ) {
+        return (0, "Current user is not a sender or reciever");
     }
+
+    my $we_are = $self->WhoWeAre;
 
     # filter out repeated values even if spec says update should only
     # enlist new values
@@ -102,8 +119,83 @@ sub Update {
         return $self->RollbackTransaction( "Couldn't update $field: $msg" )
             unless $status;
     }
+    if ( $by eq $we_are ) {
+        my ($status, $msg) = $self->SendUpdate( Fields => [keys %args] );
+        return $self->RollbackTransaction( "Couldn't send update to remote host: $msg" )
+            unless $status;
+    }
     $RT::Handle->Commit;
+
     return (1, 'Updated');
+}
+
+sub SendUpdate {
+    my $self = shift;
+    return (1, 'Updated remote host');
+}
+
+sub WhoWeAre {
+    my $self = shift;
+    my %args = @_;
+
+    my $our_url = RT->Config->Get('NHD_WebURL');
+
+    my $res;
+    if ( ($self->Sender || $args{'Sender'}) eq $our_url ) {
+        $res = 'Sender';
+    }
+    elsif ( ($self->Receiver || $args{'Receiver'} || '') eq $our_url ) {
+        $res = 'Receiver';
+    }
+    return $res;
+}
+
+sub WhoIsCurrentUser {
+    my $self = shift;
+    my %args = @_;
+
+    my $user_url = $self->CurrentUser->UserObj->Name;
+    if ( ($self->Sender || $args{'Sender'} || '') eq $user_url ) {
+        return 'Sender';
+    }
+    elsif ( ($self->Receiver || $args{'Receiver'} || '') eq $user_url ) {
+        return 'Receiver';
+    }
+    return $self->WhoWeAre( %args );
+}
+
+sub LoadOrCreateUser {
+    my $self = shift;
+    my %args = @_;
+
+    my $our_url = RT->Config->Get('NHD_WebURL');
+
+    my $url;
+    if ( ($self->Sender || $args{'Sender'}) eq $our_url ) {
+        $url = $self->Receiver || $args{'Receiver'} || '';
+    }
+    elsif ( ($self->Receiver || $args{'Receiver'} || '') eq $our_url ) {
+        $url = $self->Sender || $args{'Sender'} || '';
+    }
+    else {
+        return (undef, "Either sender or receiver should be '$our_url'");
+    }
+    unless ( $url ) {
+        return (undef, "Undefined URL");
+    }
+    my $user = RT::User->new( RT->SystemUser );
+    $user->Load( $url );
+    return ($user, 'Loaded') if $user->id;
+
+    my ($status, $msg) = $user->Create(
+        Name => $url,
+        Privileged => 0,
+        Disabled => 0,
+        Comments => "Auto created on submitting Networked HelpDesk Agreement",
+    );
+    return ($status, $msg) unless $status;
+
+    return ($user, 'Created');
 }
 
 sub ValidateUUID { return RT::Extension::NHD->CheckUUID( $_[1] ) }
