@@ -20,16 +20,7 @@ sub json_request {
     my $self = shift;
     my ($method, $uri, %args) = @_;
     $uri = $self->rt_base_url .'NoAuth/NHD/1.0'. $uri;
-    my $data;
-    $data = RT::Extension::NHD->ToJSON( delete $args{'data'} )
-        unless $method eq 'GET';
-    my %headers = %{ $args{'headers'}||{}};
-    %headers = (
-        %headers,
-        'X-Ticket-Sharing-Version' => '1',
-    );
-    my $request = HTTP::Request->new( $method, $uri, [%headers], $data );
-    return $self->request( $request );
+    RT::Extension::NHD->JSONRequest( $method, $uri, %args );
 }
 
 1;

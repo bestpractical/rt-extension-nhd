@@ -17,10 +17,10 @@ my $i = 0;
 
     my $response = $m->json_request(
         POST => '/agreements/'. $uuid,
-        headers => {
+        Headers => {
             'X-Ticket-Sharing-Token' => "$uuid:$access_key",
         },
-        data => {
+        Data => {
             uuid => $uuid,
             name => 'Test Company',
             status => 'pending',
@@ -53,7 +53,7 @@ my $i = 0;
 
     $response = $m->json_request(
         GET => '/agreements/'. $uuid,
-        headers => {
+        Headers => {
             'X-Ticket-Sharing-Token' => "$uuid:$access_key",
         },
     );

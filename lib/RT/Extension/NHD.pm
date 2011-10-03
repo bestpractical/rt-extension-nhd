@@ -15,6 +15,8 @@ RT::Extension::NHD - Networked Help Desk protocol for Request Tracker
 
 use RT::NHD::Agreement;
 use JSON::Any;
+use LWP::UserAgent;
+use HTTP::Request;
 
 sub FromJSON {
     return JSON::Any->new->from_json( $_[1] );
@@ -32,7 +34,29 @@ sub CheckUUID {
     return 1;
 }
 
-my %HTTP_CODE = (
+sub JSONRequest {
+    my $self = shift;
+    my ($method, $uri, %args) = @_;
+
+    my $data;
+    $data = RT::Extension::NHD->ToJSON( delete $args{'Data'} )
+        unless uc($method) eq 'GET';
+    my %headers = %{ delete $args{'Headers'} || {} };
+    %headers = (
+        'X-Ticket-Sharing-Version' => '1',
+        'Content-Type' => 'text/x-json; charset="UTF-8"',
+        %headers,
+    );
+    my $request = HTTP::Request->new( $method, $uri, [%headers], $data );
+    return $self->SendRequest( $request );
+}
+
+sub SendRequest {
+    my $self = shift;
+    return LWP::UserAgent->new->request( shift );
+}
+
+our %HTTP_CODE = (
     'OK' => 200,
     'Created' => 201,
 
@@ -44,6 +68,7 @@ my %HTTP_CODE = (
     'Precondition Failed' => 412,
     'Unprocessable Entity' => 422,
 );
+our %HTTP_MESSAGE = reverse %HTTP_CODE;
 
 sub BadWebRequest {
     my $self = shift;
@@ -77,6 +102,8 @@ sub StopWebRequest {
 }
 
 my %METHOD_TO_ACTION = ( GET => 'show', POST => 'create', PUT => 'update' );
+my %ACTION_TO_METHOD = reverse %METHOD_TO_ACTION;
+sub ActionToWebMethod { return $ACTION_TO_METHOD{ lc $_[1] } };
 sub WebRequestAction {
     return $METHOD_TO_ACTION{ uc $HTML::Mason::Commands::r->method };
 }

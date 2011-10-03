@@ -40,7 +40,7 @@ sub Create {
     my @rv = $self->SUPER::Create( %args );
 
     if ( $we_are eq $by ) {
-        my ($status, $msg) = $self->SendUpdate;
+        my ($status, $msg) = $self->Send( 'create' );
         return $self->RollbackTransaction( "Couldn't send update to remote host: $msg" )
             unless $status;
     }
@@ -120,7 +120,7 @@ sub Update {
             unless $status;
     }
     if ( $by eq $we_are ) {
-        my ($status, $msg) = $self->SendUpdate( Fields => [keys %args] );
+        my ($status, $msg) = $self->Send( update => Fields => [keys %args] );
         return $self->RollbackTransaction( "Couldn't send update to remote host: $msg" )
             unless $status;
     }
@@ -129,9 +129,35 @@ sub Update {
     return (1, 'Updated');
 }
 
-sub SendUpdate {
+my %INVERT_ROLE = ( Receiver => 'Sender', Sender => 'Receiver' );
+
+sub Send {
     my $self = shift;
-    return (1, 'Updated remote host');
+    my $action = shift;
+    my %args = @_;
+
+    my $recipient = $INVERT_ROLE{ $self->WhoWeAre };
+    return (0, 'We are neither sender nor receiver')
+        unless $recipient;
+
+    my $method = RT::Extension::NHD->ActionToWebMethod( $action );
+    return (0, "Unknown action '$action'")
+        unless $method;
+
+    my $response = RT::Extension::NHD->JSONRequest(
+        $method => $self->$recipient() .'/agreements/'. $self->UUID,
+        Headers => {
+            'X-Ticket-Sharing-Token' => $self->UUID .':'. $self->AccessKey,
+        },
+        Data => $self->ForJSON( %args ),
+    );
+
+    unless ( $response && $response->is_success ) {
+        return (0, 'No response', $response) unless $response;
+        return (0, 'Request was not successful', $response);
+    }
+
+    return (1, 'Updated remote host', $response);
 }
 
 sub WhoWeAre {
@@ -231,32 +257,38 @@ sub _ValidateURI {
     return 1;
 }
 
+our %FIELDS_MAP = (
+    UUID => 'uuid',
+    Name => 'name',
+    Status => 'status',
+    Sender => 'sender_url',
+    Receiver => 'receiver_url',
+    AccessKey => 'access_key',
+    DeactivatedBy => 'deactivated_by',
+);
+
 sub FromJSON {
     my $self = shift;
     my ($args) = @_;
 
-    return {
-        UUID => $args->{'uuid'},
-        Name => $args->{'name'},
-        Status => $args->{'status'},
-        Sender => $args->{'sender_url'},
-        Receiver => $args->{'receiver_url'},
-        AccessKey => $args->{'access_key'},
-        DeactivatedBy => $args->{'deactivated_by'},
+    my %res;
+    while ( my ($k, $v) = each %FIELDS_MAP ) {
+        next unless exists $args->{$v};
+        $res{ $k } = $args->{$v};
     };
+
+    return \%res;
 }
 
 sub ForJSON {
     my $self = shift;
-    return {
-        uuid => $self->UUID,
-        name => $self->Name,
-        status => $self->Status,
-        sender_url => $self->Sender,
-        receiver_url => $self->Receiver,
-        access_key => $self->AccessKey,
-        deactivated_by => $self->DeactivatedBy,
-    };
+    my %args = @_;
+
+    my @fields = $args{'Fields'} ? @{$args{'Fields'}} : keys %FIELDS_MAP;
+
+    my %res;
+    $res{ $FIELDS_MAP{$_} } = $self->$_() foreach @fields;
+    return \%res;
 }
 
 sub TableAttributes {
