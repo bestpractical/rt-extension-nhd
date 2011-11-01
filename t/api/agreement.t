@@ -217,7 +217,7 @@ my $i = 0;
         Name => 'Correct Test Company',
         AccessKey => sha1_hex( ''. ++$i ),
     );
-    ok $status, 'updated URL of the sender by sender' or "error: $msg";
+    ok $status, 'updated URL of the sender by sender' or diag "error: $msg";
     is( $agreement->Name, 'Correct Test Company', 'correct value' );
     is( $agreement->AccessKey, sha1_hex( ''. $i ), 'correct value' );
 
