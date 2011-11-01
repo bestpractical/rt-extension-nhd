@@ -1,0 +1,23 @@
+<& /Admin/Elements/Header, Title => loc('Sharing agreements') &>
+<& /Elements/Tabs &>
+
+<& /Elements/CollectionList,
+    OrderBy => 'Name',
+    Order => 'ASC',
+    Rows  => 100,
+    %ARGS,
+    Format => $Format,
+    Collection => $agreements,
+    AllowSorting => 1,
+&>
+
+<%INIT>
+my $Format =
+    q{'<a href="__WebPath__/Admin/Tools/NHD/Modify.html?id=__id__">__id__</a>/TITLE:#'}
+    .q{,'<a href="__WebPath__/Admin/Tools/NHD/Modify.html?id=__id__">__Name__</a>/TITLE:Name'}
+    .q{,__Status__,__WhoWeAre__,__Remote__}
+;
+
+my $agreements = RT::NHD::Agreements->new( $session{'CurrentUser'} );
+$agreements->UnLimit;
+</%INIT>

@@ -1,0 +1,70 @@
+<& /Admin/Elements/Header, Title => loc('Sharing agreements') &>
+<& /Elements/Tabs &>
+
+<& /Elements/ListActions, actions => \@results &>
+
+<form action="<% RT->Config->Get('WebPath') %><% $m->request_path %>" method="post">
+
+<table>
+
+<tr>
+  <td class="label"><&|/l&>Name</&>:</td>
+  <td class="value">
+% if ( $who_we_are eq 'Receiver' ) {
+    <% $agreement->Name %>
+% } else {
+    <input name="Name" value="<% $Name || $agreement->Name %>" />
+% }
+  </td>
+</tr>
+
+<tr>
+  <td class="label"><&|/l&>Status</&>:</td>
+  <td class="value"><& Elements/SelectStatus,
+      Agreement => $agreement,
+      Default   => $Status || $agreement->Status,
+  &></td>
+</tr>
+
+</table>
+
+<& /Elements/Submit, Name => 'Update', Label => loc('Create') &>
+</form>
+
+<%ARGS>
+$id       => 0
+$Name     => ''
+$Status   => ''
+
+$Update   => undef
+</%ARGS>
+<%INIT>
+my @results;
+
+my $agreement = RT::NHD::Agreement->new( $session{'CurrentUser'} );
+$agreement->Load( $id );
+unless ( $agreement->id ) {
+    Abort(loc("Couldn't find agreement #[_1]", $id));
+}
+
+my $who_we_are = $agreement->WhoWeAre;
+unless ( $who_we_are ) {
+    Abort(loc(
+        "Neither Sender nor Receiver URLs match configured '[_1]'",
+        RT->Config->Get('NHD_WebURL')
+    ));
+}
+
+if ( $Update ) {
+    my %args = (Name => $Name, Status => $Status);
+    delete $args{$_} foreach grep !defined $args{$_} || !length $args{$_}, keys %args;
+
+    my ($status, $msg) = $agreement->Update( %args );
+    MaybeRedirectForResults(
+        Actions   => [loc("Updated tickets sharing agreement")],
+        Arguments => { id => $agreement->id },
+    ) if $status;
+
+    push @results, $msg;
+}
+</%INIT>

@@ -53,7 +53,7 @@ sub Create {
     if ( $we_are eq $by ) {
         my ($status, $msg) = $self->Send( 'create' );
         return $self->RollbackTransaction( "Couldn't send update to remote host: $msg" )
-            unless $status;
+            if !$status && $self->Handle->TransactionDepth;
     }
 
     return @rv;
@@ -147,7 +147,7 @@ sub Send {
     my $action = shift;
     my %args = @_;
 
-    my $recipient = $INVERT_ROLE{ $self->WhoWeAre };
+    my $recipient = $self->RemoteIs;
     return (0, 'We are neither sender nor receiver')
         unless $recipient;
 
@@ -186,6 +186,8 @@ sub WhoWeAre {
     }
     return $res;
 }
+
+sub RemoteIs { return $INVERT_ROLE{ (shift)->WhoWeAre } }
 
 sub WhoIsCurrentUser {
     my $self = shift;

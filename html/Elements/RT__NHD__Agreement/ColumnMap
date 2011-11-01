@@ -1,0 +1,39 @@
+<%ARGS>
+$Name
+$Attr => undef
+</%ARGS>
+<%ONCE>
+my $COLUMN_MAP = {
+    id => {
+        title     => '#', # loc
+        attribute => 'id',
+        align     => 'right',
+        value     => sub { return $_[0]->id },
+    },
+    Remote => {
+        title     => 'Remote URI', # loc
+        value     => sub {
+            my $remote = $_[0]->RemoteIs;
+            return 'URL of this server was changed' unless $remote;
+            return $_[0]->$remote();
+        },
+    },
+    WhoWeAre => {
+        title     => 'You Are', # loc
+        value     => sub { return $_[0]->WhoWeAre || 'URL of this server was changed' },
+    },
+};
+
+foreach (qw(UUID Name Status Sender Receiver DeactivatedBy)) {
+    my $field = $_; # for closure
+    $COLUMN_MAP->{$field} = {
+        title     => $field, # loc
+        attribute => $field,
+        value     => sub { return $_[0]->$field() },
+    };
+}
+</%ONCE>
+<%INIT>
+$m->callback( COLUMN_MAP => $COLUMN_MAP, CallbackName => 'ColumnMap', CallbackOnce => 1 );
+return GetColumnMapEntry( Map => $COLUMN_MAP, Name => $Name, Attribute => $Attr );
+</%INIT>

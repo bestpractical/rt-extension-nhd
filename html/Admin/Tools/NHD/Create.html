@@ -1,0 +1,54 @@
+<& /Admin/Elements/Header, Title => loc('Create sharing agreement') &>
+<& /Elements/Tabs &>
+
+<& /Elements/ListActions, actions => \@results &>
+
+<form action="<% RT->Config->Get('WebPath') %><% $m->request_path %>" method="post" name="CreateAgreement">
+
+<table>
+
+<tr>
+  <td class="label"><&|/l&>Name</&>:</td>
+  <td class="value"><input name="Name" value="<% $Name %>" /></td>
+</tr>
+<tr>
+  <td>&nbsp;</td>
+  <td class="comment"><&|/l&>(User friendly local description, Organization is always send to remote end)</&></td>
+</tr>
+<tr>
+  <td class="label"><&|/l&>Receiver</&>:</td>
+  <td class="value"><input name="Receiver" value="<% $Receiver %>" /></td>
+</tr>
+<tr>
+  <td class="label"><&|/l&>Status</&>:</td>
+  <td class="value"><&|/l&>pending</&></td>
+</tr>
+
+</table>
+
+<& /Elements/Submit, Name => 'Create', Label => loc('Create') &>
+</form>
+
+<%ARGS>
+$Create   => undef
+$Name     => ''
+$Receiver => ''
+</%ARGS>
+<%INIT>
+my @results;
+
+if ( $Create ) {
+    my $agreement = RT::NHD::Agreement->new( $session{'CurrentUser'} );
+    my ($status, $msg) = $agreement->Create(
+        Name => $Name,
+        Receiver => $Receiver,
+        Sender => RT->Config->Get('NHD_WebURL'),
+    );
+    MaybeRedirectForResults(
+        Path      => '/Admin/Tools/NHD/Modify.html',
+        Actions   => ["Created a new tickets sharing agreement"],
+        Arguments => { id => $agreement->Id },
+    ) if $status;
+    push @results, $msg;
+}
+</%INIT>

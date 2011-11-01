@@ -1,0 +1,42 @@
+<select name="<% $Name %>">
+<option value=""><% loc($current) %> <% loc("(no change)")%></option>
+% foreach my $status ( @statuses ) {
+<option value="<% $status %>"><% loc($status) %></option>
+% }
+</select>
+<%ARGS>
+$Agreement
+$Name      => 'Status'
+$Default   => undef
+</%ARGS>
+<%INIT>
+my $current = $agreement->Status;
+my $Default ||= $current;
+
+my @statuses;
+
+my $who_we_are = $agreement->WhoWeAre;
+if ( $who_we_are eq 'Receiver' ) {
+    if ( $current eq 'pending' ) {
+        $m->out(loc('pending'));
+        return;
+    }
+    elsif ( $current eq 'accepted' ) {
+        push @statuses, 'inactive';
+    }
+} else {
+    if ( $current eq 'pending' ) {
+        push @statuses, 'accepted', 'declined';
+    }
+    elsif ( $current eq 'accepted' ) {
+        push @statuses, 'inactive';
+    }
+    elsif ( $current eq 'declined' ) {
+        push @statuses, 'accepted';
+    }
+}
+
+if ( $current eq 'inactive' && $Agreement->DeactivatedBy eq $who_we_are ) {
+    push @statuses, 'accepted';
+}
+</%INIT>

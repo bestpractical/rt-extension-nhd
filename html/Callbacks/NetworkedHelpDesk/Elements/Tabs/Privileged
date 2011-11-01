@@ -1,0 +1,29 @@
+<%INIT>
+my $tools = Menu()->child('tools')->child('config')->child('tools');
+my $nhd = $tools->child(
+    nhd => title => loc('Networked Help Desk'),
+    path => '/Admin/Tools/NHD/',
+);
+$nhd->child(
+    select => title => loc('Agreements'),
+    path => '/Admin/Tools/NHD/',
+);
+$nhd->child(
+    create => title => loc('Create Agreement'),
+    path => '/Admin/Tools/NHD/Create.html',
+);
+
+my $request_path = $HTML::Mason::Commands::r->path_info;
+if ( $request_path =~ m{^/Admin/Tools/NHD/} ) {
+    my $tabs = PageMenu();
+    $tabs->child(
+        select => title => loc('Select'),
+        path => '/Admin/Tools/NHD/',
+    );
+    $tabs->child(
+        create => title => loc('Create'),
+        path => '/Admin/Tools/NHD/Create.html',
+    );
+}
+
+</%INIT>
