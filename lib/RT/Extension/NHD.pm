@@ -13,7 +13,7 @@ RT::Extension::NHD - Networked Help Desk protocol for Request Tracker
 
 =cut
 
-use RT::NHD::Agreement;
+use RT::NHD::Agreements;
 use JSON::Any;
 use LWP::UserAgent;
 use HTTP::Request;
