@@ -12,3 +12,4 @@ nytprof/
 *.tar.gz
 *.sw[po]
 t/tmp/
+MYMETA.yml
