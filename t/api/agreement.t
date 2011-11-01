@@ -86,7 +86,7 @@ my $i = 0;
     is( $agreement->Receiver, RT->Config->Get('NHD_WebURL'), 'correct value' );
     like( $agreement->AccessKey, qr{^[0-9a-f]{40}$}i, 'correct value' );
 
-    is scalar remote_requests(), 0, 'no outgoing requests';
+    is scalar remote_requests(), undef, 'no outgoing requests';
 }
 
 # bad status
@@ -102,7 +102,7 @@ my $i = 0;
         AccessKey => sha1_hex( ''. ++$i ),
     );
     ok(!$id, "Couldn't create an agreement $uuid: $msg");
-    is scalar remote_requests(), 0, 'no outgoing requests';
+    ok !scalar remote_requests(), 'no outgoing requests';
 }
 
 # can only be created with pending status
@@ -118,7 +118,7 @@ my $i = 0;
         AccessKey => sha1_hex( ''. ++$i ),
     );
     ok(!$id, "Couldn't create an agreement $uuid: $msg");
-    is scalar remote_requests(), 0, 'no outgoing requests';
+    ok !scalar remote_requests(), 'no outgoing requests';
 }
 
 # simple update by sender we are receiver
@@ -142,7 +142,7 @@ my $i = 0;
     ok $status, 'updated URL of the sender by sender';
     is( $agreement->Name, 'Correct Test Company', 'correct value' );
     is( $agreement->AccessKey, sha1_hex( ''. $i ), 'correct value' );
-    is scalar remote_requests(), 0, 'no outgoing requests';
+    ok !scalar remote_requests(), 'no outgoing requests';
 }
 
 # update with error
@@ -159,7 +159,7 @@ my $i = 0;
     );
     ok($id, "Created an agreement") or diag "error: $msg";
 
-    my ($status, $msg) = $agreement->Update(
+    (my $status, $msg) = $agreement->Update(
         Name => 'Correct Test Company',
         AccessKey => 'bad access key',
     );
@@ -167,7 +167,7 @@ my $i = 0;
     # make sure we're transactional
     is( $agreement->Name, 'Test Company', 'correct value' );
     is( $agreement->AccessKey, sha1_hex( ''. $i ), 'correct value' );
-    is scalar remote_requests(), 0, 'no outgoing requests';
+    ok !scalar remote_requests(), 'no outgoing requests';
 }
 
 # we are sending
