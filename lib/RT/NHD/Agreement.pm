@@ -5,6 +5,7 @@ package RT::NHD::Agreement;
 use base 'RT::Record';
 
 use RT::NHD::Agreements;
+use Digest::SHA1 qw(sha1_hex);
 
 our @STATUSES = qw(pending accepted declined inactive);
 
@@ -33,7 +34,17 @@ sub Create {
         return (0, "Current user is not a sender or receiver");
     }
 
-    unless ( ($args{'Status'}||'') eq 'pending' ) {
+    if ( $we_are eq 'Sender' ) {
+        $args{'AccessKey'} ||= sha1_hex(join '',
+            @args{qw(Sender Receiver Name)},
+            $$, rand(1),
+        );
+
+        $args{'UUID'} ||= sha1_hex(join '', @args{qw(AccessKey Sender Receiver Name)});
+    }
+
+    $args{'Status'} ||= 'pending';
+    unless ( $args{'Status'} eq 'pending' ) {
         return (undef, "New agreement must have 'pending' status");
     }
 
