@@ -67,6 +67,7 @@ my $i = 0;
             sender_url => 'http://hoster.example.com/sharing',
             receiver_url => RT->Config->Get('NHD_WebURL'),
             access_key => $access_key,
+            deactivated_by => undef,
         },
         'correct agreement',
     );
