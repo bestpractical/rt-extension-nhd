@@ -1,8 +1,6 @@
 * in Agreement::Create make sure that the following situation
   is denined: WhoWeAre == Sender and CurrentUserIs Receiver
 
-* Transactional Create
-
 * When AccessKey changes locally we send wrong auth token
   to the other side
 ** covered with TODO test

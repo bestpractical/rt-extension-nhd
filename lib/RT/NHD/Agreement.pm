@@ -48,13 +48,19 @@ sub Create {
         return (undef, "New agreement must have 'pending' status");
     }
 
+    $RT::Handle->BeginTransaction;
+
     my @rv = $self->SUPER::Create( %args );
+    return $self->RollbackTransaction( "Couldn't create agreement record: $rv[1]" )
+        unless $rv[0];
 
     if ( $we_are eq $by ) {
         my ($status, $msg) = $self->Send( 'create' );
         return $self->RollbackTransaction( "Couldn't send update to remote host: $msg" )
             unless $status;
     }
+
+    $RT::Handle->Commit;
 
     return @rv;
 }

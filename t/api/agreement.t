@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use RT::Extension::NHD::Test tests => 55;
+use RT::Extension::NHD::Test tests => 58;
 my $test = 'RT::Extension::NHD::Test';
 
 use Digest::SHA1 qw(sha1_hex);
@@ -55,7 +55,7 @@ my $i = 0;
     is( $agreement->Receiver, RT->Config->Get('NHD_WebURL'), 'correct value' );
     like( $agreement->AccessKey, qr{^[0-9a-f]{40}$}i, 'correct value' );
 
-    is scalar $test->remote_requests, undef, 'no outgoing requests';
+    ok !scalar $test->remote_requests, 'no outgoing requests';
 }
 
 # bad status
@@ -136,6 +136,26 @@ my $i = 0;
     # make sure we're transactional
     is( $agreement->Name, 'Test Company', 'correct value' );
     is( $agreement->AccessKey, sha1_hex( ''. $i ), 'correct value' );
+    ok !scalar $test->remote_requests, 'no outgoing requests';
+}
+
+# create with error
+{
+    my $agreement = RT::NHD::Agreement->new( RT::CurrentUser->new( $remote_user ) );
+    my $uuid = sha1_hex( ''. ++$i );
+    my ($id, $msg) = $agreement->Create(
+        UUID => $uuid,
+        Name => 'Test Company',
+        Status => 'booo',
+        Sender => $remote_url,
+        Receiver => RT->Config->Get('NHD_WebURL'),
+        AccessKey => sha1_hex( ''. ++$i ),
+    );
+    ok(!$id, "failed to create agreement");
+
+    $agreement = RT::NHD::Agreement->new( RT->SystemUser );
+    $agreement->Load($uuid);
+    ok !$agreement->id, "no agreement in DB";
     ok !scalar $test->remote_requests, 'no outgoing requests';
 }
 
