@@ -14,6 +14,12 @@ package RT;
 
 Set( $NHD_WebURL, RT->Config->Get('WebURL') . 'NoAuth/NHD/1.0' );
 
+=item C<$NHD_Name>
+
+=cut
+
+Set( $NHD_Name, RT->Config->Get('Organization') );
+
 =back
 
 =cut

@@ -5,8 +5,6 @@
   to the other side
 ** covered with TODO test
 
-* add meaning to Agreement->Name when we're sharing
-
 * script that updates remote agreements when Organization or
   NHD_WebURL changes.
 

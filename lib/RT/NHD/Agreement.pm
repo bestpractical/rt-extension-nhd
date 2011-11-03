@@ -307,6 +307,9 @@ sub ForJSON {
 
     my %res;
     $res{ $FIELDS_MAP{$_} } = $self->$_() foreach @fields;
+    if ( exists $res{'name'} && $self->WhoWeAre eq 'Sender' ) {
+        $res{'name'} = RT->Config->Get('NHD_Name');
+    }
     return \%res;
 }
 
