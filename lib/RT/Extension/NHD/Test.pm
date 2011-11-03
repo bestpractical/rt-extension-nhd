@@ -27,8 +27,8 @@ sub import {
         return $orig->(@_) if $_[1] && $_[1]->uri =~ RT->Config->Get('WebDomain');
 
         my $self = shift;
-        return RT::Extension::NHD::Test->push_object_into_file( 'requests', shift );
-        return RT::Extension::NHD::Test->get_object_from_file( 'responses' );
+        __PACKAGE__->push_object_into_file( 'requests', shift );
+        return __PACKAGE__->get_object_from_file( 'responses' );
     };
 }
 
@@ -68,7 +68,7 @@ sub push_object_into_file {
     my $type = shift;
     open my $fh, '>>', $self->temp_directory ."/nhd-${type}-file"
         or die $!;
-    print $fh $_."$magic_string" foreach map Storable::nfreeze($_), @_;
+    print $fh map Storable::nfreeze($_)."$magic_string", @_;
     close $fh;
 }
 sub get_object_from_file {
@@ -87,9 +87,9 @@ sub get_objects_from_file {
 
     my $data = $self->file_content(
         [$self->temp_directory, "nhd-${type}-file"],
-        unlink => 1
+        noexist => 1, unlink => 1
     );
-    return map Storable::thaw($_), split /\Q$magic_string/, $data;
+    return map Storable::thaw($_), grep length, split /\Q$magic_string/, $data;
 }
 
 1;
