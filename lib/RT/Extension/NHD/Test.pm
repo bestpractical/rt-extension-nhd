@@ -24,7 +24,10 @@ sub import {
     $class->export_to_level(1);
 
     no strict 'subs';
+    my $orig = \&RT::Extension::NHD::SendRequest;
     *RT::Extension::NHD::SendRequest = sub {
+        return $orig->(@_) if $_[1] && $_[1]->uri =~ RT->Config->Get('WebDomain');
+
         my $self = shift;
         push @requests, shift;
         return shift @responses;
