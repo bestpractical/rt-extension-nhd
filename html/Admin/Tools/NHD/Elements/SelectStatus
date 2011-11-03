@@ -10,12 +10,12 @@ $Name      => 'Status'
 $Default   => undef
 </%ARGS>
 <%INIT>
-my $current = $agreement->Status;
-my $Default ||= $current;
+my $current = $Agreement->Status;
+$Default ||= $current;
 
 my @statuses;
 
-my $who_we_are = $agreement->WhoWeAre;
+my $who_we_are = $Agreement->WhoWeAre;
 if ( $who_we_are eq 'Receiver' ) {
     if ( $current eq 'pending' ) {
         $m->out(loc('pending'));
