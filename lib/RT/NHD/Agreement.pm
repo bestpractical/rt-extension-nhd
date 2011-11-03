@@ -53,7 +53,7 @@ sub Create {
     if ( $we_are eq $by ) {
         my ($status, $msg) = $self->Send( 'create' );
         return $self->RollbackTransaction( "Couldn't send update to remote host: $msg" )
-            if !$status && $self->Handle->TransactionDepth;
+            unless $status;
     }
 
     return @rv;
@@ -315,7 +315,7 @@ sub RollbackTransaction {
     my $self = shift;
     my $msg = shift;
 
-    $RT::Handle->Rollback;
+    $RT::Handle->Rollback if $self->_Handle->TransactionDepth;
 
     $self->LoadByCols( id => $self->id );
 
