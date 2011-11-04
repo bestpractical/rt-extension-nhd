@@ -1,0 +1,11 @@
+NAME
+    RT::Extension::NetworkedHelpDesk - Networked Help Desk protocol for
+    Request Tracker
+
+DESCRIPTION
+AUTHOR
+    Ruslan Zakirov <ruz@bestpractical.com>
+
+LICENSE
+    GPL version 2.
+
