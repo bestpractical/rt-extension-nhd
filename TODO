@@ -8,3 +8,7 @@
 * script that updates remote agreements when Organization or
   NHD_WebURL changes.
 
+* implement agreements' status change check
+
+* add Queue to agreements where we receive
+** don't allow admin to accept until it's filled
