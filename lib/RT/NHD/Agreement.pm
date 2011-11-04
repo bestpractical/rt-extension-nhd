@@ -14,7 +14,7 @@ sub Table {'NHDAgreements'}
 sub Load {
     my $self = shift;
     my $value = shift;
-    if ( RT::Extension::NHD->CheckUUID($value) ) {
+    if ( RT::Extension::NetworkedHelpDesk->CheckUUID($value) ) {
         return $self->LoadByCols( @_, UUID => $value );
     }
     return $self->SUPER::Load( $value, @_ );
@@ -157,11 +157,11 @@ sub Send {
     return (0, 'We are neither sender nor receiver')
         unless $recipient;
 
-    my $method = RT::Extension::NHD->ActionToWebMethod( $action );
+    my $method = RT::Extension::NetworkedHelpDesk->ActionToWebMethod( $action );
     return (0, "Unknown action '$action'")
         unless $method;
 
-    my $response = RT::Extension::NHD->JSONRequest(
+    my $response = RT::Extension::NetworkedHelpDesk->JSONRequest(
         $method => $self->$recipient() .'/agreements/'. $self->UUID,
         Headers => {
             'X-Ticket-Sharing-Token' => $self->UUID .':'. $self->AccessKey,
@@ -243,8 +243,8 @@ sub LoadOrCreateUser {
     return ($user, 'Created');
 }
 
-sub ValidateUUID { return RT::Extension::NHD->CheckUUID( $_[1] ) }
-sub ValidateAccessKey { return RT::Extension::NHD->CheckUUID( $_[1] ) }
+sub ValidateUUID { return RT::Extension::NetworkedHelpDesk->CheckUUID( $_[1] ) }
+sub ValidateAccessKey { return RT::Extension::NetworkedHelpDesk->CheckUUID( $_[1] ) }
 
 sub ValidateStatus {
     my $self = shift;

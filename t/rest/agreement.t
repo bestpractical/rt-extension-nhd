@@ -3,12 +3,12 @@
 use strict;
 use warnings;
 
-use RT::Extension::NHD::Test tests => 18;
+use RT::Extension::NetworkedHelpDesk::Test tests => 18;
 use Digest::SHA1 qw(sha1_hex);
 
-RT::Extension::NHD::Test->started_ok;
+RT::Extension::NetworkedHelpDesk::Test->started_ok;
 
-my $m = RT::Extension::NHD::Test->new_agent;
+my $m = RT::Extension::NetworkedHelpDesk::Test->new_agent;
 
 my $i = 0;
 {
@@ -59,7 +59,7 @@ my $i = 0;
     );
     is( $response->code, 200, 'got agreement' );
     is_deeply(
-        RT::Extension::NHD->FromJSON( $response->content ),
+        RT::Extension::NetworkedHelpDesk->FromJSON( $response->content ),
         {
             uuid => $uuid,
             name => 'Test Company',

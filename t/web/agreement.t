@@ -3,8 +3,8 @@
 use strict;
 use warnings;
 
-use RT::Extension::NHD::Test tests => 18;
-my $test = 'RT::Extension::NHD::Test';
+use RT::Extension::NetworkedHelpDesk::Test tests => 18;
+my $test = 'RT::Extension::NetworkedHelpDesk::Test';
 use Digest::SHA1 qw(sha1_hex);
 
 my $org = 'Cool Company Sharing Tickets';
@@ -40,7 +40,7 @@ my $remote_url = 'http://hoster.example.com/sharing';
         $agreement->UUID .':'. $agreement->AccessKey;
     is lc $requests[0]->header('Content-Type'), 'text/x-json; charset="utf-8"';
     is_deeply(
-        RT::Extension::NHD->FromJSON( $requests[0]->content ),
+        RT::Extension::NetworkedHelpDesk->FromJSON( $requests[0]->content ),
         $agreement->ForJSON,
     );
 }

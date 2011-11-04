@@ -2,12 +2,12 @@ use 5.008003;
 use strict;
 use warnings;
 
-package RT::Extension::NHD;
+package RT::Extension::NetworkedHelpDesk;
 our $VERSION = '0.01';
 
 =head1 NAME
 
-RT::Extension::NHD - Networked Help Desk protocol for Request Tracker
+RT::Extension::NetworkedHelpDesk - Networked Help Desk protocol for Request Tracker
 
 =head1 DESCRIPTION
 
@@ -39,7 +39,7 @@ sub JSONRequest {
     my ($method, $uri, %args) = @_;
 
     my $data;
-    $data = RT::Extension::NHD->ToJSON( delete $args{'Data'} )
+    $data = RT::Extension::NetworkedHelpDesk->ToJSON( delete $args{'Data'} )
         unless uc($method) eq 'GET';
     my %headers = %{ delete $args{'Headers'} || {} };
     %headers = (

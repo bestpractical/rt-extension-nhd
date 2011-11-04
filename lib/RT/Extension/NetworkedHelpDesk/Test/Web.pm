@@ -1,10 +1,10 @@
 use strict;
 use warnings;
 
-package RT::Extension::NHD::Test::Web;
+package RT::Extension::NetworkedHelpDesk::Test::Web;
 use base qw(RT::Test::Web);
 
-require RT::Extension::NHD::Test;
+require RT::Extension::NetworkedHelpDesk::Test;
 require Test::More;
 
 sub new_agent {
@@ -20,7 +20,7 @@ sub json_request {
     my $self = shift;
     my ($method, $uri, %args) = @_;
     $uri = $self->rt_base_url .'NoAuth/NHD/1.0'. $uri;
-    RT::Extension::NHD->JSONRequest( $method, $uri, %args );
+    RT::Extension::NetworkedHelpDesk->JSONRequest( $method, $uri, %args );
 }
 
 1;

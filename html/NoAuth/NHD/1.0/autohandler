@@ -1,7 +1,7 @@
 <%INIT>
 my $version = $r->headers_in->{'X-Ticket-Sharing-Version'};
 if ( ($version||'') ne '1' ) {
-    return RT::Extension::NHD->BadWebRequest('Precondition Failed');
+    return RT::Extension::NetworkedHelpDesk->BadWebRequest('Precondition Failed');
 }
 
 my $ct = $r->headers_in->{'Content-Type'};
@@ -15,8 +15,8 @@ if ( $method ne 'GET' && (!$ct || $ct =~ m{^text/x-json}) ) {
     seek $input, 0, 0;
     my $content = do { local $/; <$input> };
 
-    $data = RT::Extension::NHD->FromJSON( $content );
-    return RT::Extension::NHD->BadWebRequest unless $data;
+    $data = RT::Extension::NetworkedHelpDesk->FromJSON( $content );
+    return RT::Extension::NetworkedHelpDesk->BadWebRequest unless $data;
 }
 
 $m->call_next( %$data );

@@ -8,52 +8,52 @@ $status => undef
 </%ARGS>
 <%INIT>
 my $duuid = $m->dhandler_arg;
-unless ( RT::Extension::NHD->CheckUUID( $duuid ) ) {
-    return RT::Extension::NHD->BadWebRequest(
+unless ( RT::Extension::NetworkedHelpDesk->CheckUUID( $duuid ) ) {
+    return RT::Extension::NetworkedHelpDesk->BadWebRequest(
         'Unprocessable Entity',
         "Value in the URI isn't a UUID"
     );
 }
 
-my $action = RT::Extension::NHD->WebRequestAction;
-return RT::Extension::NHD->BadWebRequest('Method Not Allowed')
+my $action = RT::Extension::NetworkedHelpDesk->WebRequestAction;
+return RT::Extension::NetworkedHelpDesk->BadWebRequest('Method Not Allowed')
     unless $action;
 
 if ( $action ne 'create' ) {
     $ARGS{'uuid'} = $uuid ||= $duuid;
 } elsif ( ($uuid||'') ne $duuid ) {
-    return RT::Extension::NHD->BadWebRequest(
+    return RT::Extension::NetworkedHelpDesk->BadWebRequest(
         'Unprocessable Entity',
         "UUIDs in the URI and body don't match"
     );
 }
 
 my $token = $r->headers_in->{'X-Ticket-Sharing-Token'};
-return RT::Extension::NHD->BadWebRequest('Unauthorized')
+return RT::Extension::NetworkedHelpDesk->BadWebRequest('Unauthorized')
     unless $token;
 
 my $agreement = RT::NHD::Agreement->new( RT->SystemUser );
 $agreement->Load( $uuid );
 
 if ( $action eq 'create' && $agreement->id ) {
-    return RT::Extension::NHD->BadWebRequest(
+    return RT::Extension::NetworkedHelpDesk->BadWebRequest(
         'Unprocessable Entity',
         "Couldn't create an agreement: record already exists"
     );
 }
 elsif ( $action ne 'create' ) {
-    return RT::Extension::NHD->BadWebRequest('Not Found')
+    return RT::Extension::NetworkedHelpDesk->BadWebRequest('Not Found')
         unless $agreement->id;
 
     if ( $token ne join ':', $agreement->UUID, $agreement->AccessKey ) {
-        return RT::Extension::NHD->BadWebRequest('Forbidden')
+        return RT::Extension::NetworkedHelpDesk->BadWebRequest('Forbidden')
     }
 }
 
 my %data = %{ $agreement->FromJSON( \%ARGS ) };
 
 my ($user, $msg) = $agreement->LoadOrCreateUser( %data );
-return RT::Extension::NHD->BadWebRequest(
+return RT::Extension::NetworkedHelpDesk->BadWebRequest(
     'Unprocessable Entity',
     "Couldn't create user: $msg"
 ) unless $user;
@@ -63,26 +63,26 @@ $agreement->CurrentUser( RT::CurrentUser->new( $user ) );
 if ( $agreement->id ) {
 
     if ( $action eq 'show' ) {
-        return RT::Extension::NHD->WebSendJSON( $agreement->ForJSON );
+        return RT::Extension::NetworkedHelpDesk->WebSendJSON( $agreement->ForJSON );
     }
     elsif ( $action eq 'update' ) {
         my ($status, $msg) = $agreement->Update( %data );
         unless ( $status ) {
             RT->Logger->error("Couldn't update NHD agreement: $msg");
-            return RT::Extension::NHD->BadWebRequest('Unprocessable Entity');
+            return RT::Extension::NetworkedHelpDesk->BadWebRequest('Unprocessable Entity');
         }
-        return RT::Extension::NHD->GoodWebRequest;
+        return RT::Extension::NetworkedHelpDesk->GoodWebRequest;
     }
     else {
-        return RT::Extension::NHD->BadWebRequest;
+        return RT::Extension::NetworkedHelpDesk->BadWebRequest;
     }
 }
 else {
     my ($status, $msg) = $agreement->Create( %data );
     unless ( $status ) {
         RT->Logger->error("Couldn't create NHD agreement: $msg");
-        return RT::Extension::NHD->BadWebRequest('Unprocessable Entity');
+        return RT::Extension::NetworkedHelpDesk->BadWebRequest('Unprocessable Entity');
     }
-    return RT::Extension::NHD->GoodWebRequest('Created');
+    return RT::Extension::NetworkedHelpDesk->GoodWebRequest('Created');
 }
 </%INIT>

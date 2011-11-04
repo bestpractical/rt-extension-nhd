@@ -1,7 +1,7 @@
 use inc::Module::Install;
 
-RTx('RT-Extension-NHD');
-all_from('lib/RT/Extension/NHD.pm');
-#readme_from('lib/RT/Extension/NHD.pm');
+RTx('RT-Extension-NetworkedHelpDesk');
+all_from('lib/RT/Extension/NetworkedHelpDesk.pm');
+readme_from('lib/RT/Extension/NetworkedHelpDesk.pm');
 
 WriteAll;
