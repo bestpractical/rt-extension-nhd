@@ -50,9 +50,9 @@ elsif ( $action ne 'create' ) {
     }
 }
 
-my %data = %{ $agreement->FromJSON( \%ARGS ) };
+my $data = $agreement->FromJSON( \%ARGS );
 
-my ($user, $msg) = $agreement->LoadOrCreateUser( %data );
+my ($user, $msg) = $agreement->LoadOrCreateUser( %$data );
 return RT::Extension::NetworkedHelpDesk->BadWebRequest(
     'Unprocessable Entity',
     "Couldn't create user: $msg"
@@ -60,29 +60,9 @@ return RT::Extension::NetworkedHelpDesk->BadWebRequest(
 
 $agreement->CurrentUser( RT::CurrentUser->new( $user ) );
 
-if ( $agreement->id ) {
-
-    if ( $action eq 'show' ) {
-        return RT::Extension::NetworkedHelpDesk->WebSendJSON( $agreement->ForJSON );
-    }
-    elsif ( $action eq 'update' ) {
-        my ($status, $msg) = $agreement->Update( %data );
-        unless ( $status ) {
-            RT->Logger->error("Couldn't update NHD agreement: $msg");
-            return RT::Extension::NetworkedHelpDesk->BadWebRequest('Unprocessable Entity');
-        }
-        return RT::Extension::NetworkedHelpDesk->GoodWebRequest;
-    }
-    else {
-        return RT::Extension::NetworkedHelpDesk->BadWebRequest;
-    }
-}
-else {
-    my ($status, $msg) = $agreement->Create( %data );
-    unless ( $status ) {
-        RT->Logger->error("Couldn't create NHD agreement: $msg");
-        return RT::Extension::NetworkedHelpDesk->BadWebRequest('Unprocessable Entity');
-    }
-    return RT::Extension::NetworkedHelpDesk->GoodWebRequest('Created');
-}
+return RT::Extension::NetworkedHelpDesk->ProcessRequest(
+    Object => $agreement,
+    Action => $action,
+    Data   => $data,
+);
 </%INIT>

@@ -18,6 +18,35 @@ use JSON::Any;
 use LWP::UserAgent;
 use HTTP::Request;
 
+sub ProcessRequest {
+    my $self = shift;
+    my %args = @_;
+
+    my ($object, $action, $data) = @args{qw(Object Action Data)};
+    if ( $object->id ) {
+        if ( $action eq 'show' ) {
+            return $self->WebSendJSON( $object->ForJSON );
+        }
+        elsif ( $action eq 'update' ) {
+            my ($status, $msg) = $object->Update( %$data );
+            unless ( $status ) {
+                RT->Logger->error("Couldn't update ". ref($object) .": $msg");
+                return $self->BadWebRequest('Unprocessable Entity');
+            }
+            return $self->GoodWebRequest;
+        }
+    }
+    else {
+        my ($status, $msg) = $object->Create( %$data );
+        unless ( $status ) {
+            RT->Logger->error("Couldn't create ". ref($object) .": $msg");
+            return $self->BadWebRequest('Unprocessable Entity');
+        }
+        return $self->GoodWebRequest('Created');
+    }
+    return $self->BadWebRequest;
+}
+
 sub FromJSON {
     return JSON::Any->new->from_json( $_[1] );
 }
