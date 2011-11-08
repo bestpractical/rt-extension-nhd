@@ -306,7 +306,7 @@ sub ForJSON {
     my @fields = $args{'Fields'} ? @{$args{'Fields'}} : keys %FIELDS_MAP;
 
     my %res;
-    $res{ $FIELDS_MAP{$_} } = $self->$_() foreach @fields;
+    $res{ $FIELDS_MAP{$_} } = $self->$_() foreach grep exists $FIELDS_MAP{$_}, @fields;
     if ( exists $res{'name'} && $self->WhoWeAre eq 'Sender' ) {
         $res{'name'} = RT->Config->Get('NHD_Name');
     }
@@ -334,6 +334,8 @@ sub RollbackTransaction {
 sub _CoreAccessible { return {
     id =>
     { read => 1, sql_type => 4, length => 11, is_blob => 0, is_numeric => 1, type => 'int(11)' },
+    Queue =>
+    {read => 1, write => 1, sql_type => 4, length => 11, is_blob => 0, is_numeric => 1, type => 'int(11)', default => 0},
     UUID =>
     {read => 1, write => 0, sql_type => 12, length => 40, is_blob => 0, is_numeric => 0, type => 'varchar(40)', default => ''},
     Name =>

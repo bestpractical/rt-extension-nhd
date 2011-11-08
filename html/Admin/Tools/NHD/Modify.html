@@ -26,6 +26,22 @@
   &></td>
 </tr>
 
+<tr>
+  <td class="label"><&|/l&>Queue</&>:</td>
+  <td class="value"><& /Elements/SelectQueue,
+      ShowAllQueues => 1,
+      Default       => $Queue || $agreement->Queue,
+  &></td>
+</tr>
+<tr>
+  <td>&nbsp;</td>
+% if ( $who_we_are eq 'Receiver' ) {
+  <td class="comment"><% loc("Queue where shared tickets end up.") %></td>
+% } else {
+  <td class="comment"><% loc("Limit queue tickets can be shared from.") %></td>
+% }
+</tr>
+
 </table>
 
 <& /Elements/Submit, Name => 'Update', Label => loc('Create') &>
@@ -55,7 +71,15 @@ unless ( $who_we_are ) {
     ));
 }
 
+my $skip_update = 0;
 if ( $Update ) {
+    if ( $status eq 'accepted' && $who_we_are eq 'Receiver' && !$Queue ) {
+        $skip_update = 1;
+        push @results, loc("Queue required for receiving tickets");
+    }
+}
+
+if ( $Update && !$skip_update ) {
     my %args = (Name => $Name, Status => $Status);
     delete $args{$_} foreach grep !defined $args{$_} || !length $args{$_}, keys %args;
 

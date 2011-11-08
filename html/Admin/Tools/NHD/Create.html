@@ -23,6 +23,14 @@
   <td class="label"><&|/l&>Status</&>:</td>
   <td class="value"><&|/l&>pending</&></td>
 </tr>
+<tr>
+  <td class="label"><&|/l&>Queue</&>:</td>
+  <td class="value"><& /Elements/SelectQueue, ShowAllQueues => 1, Default => $Queue &></td>
+</tr>
+<tr>
+  <td>&nbsp;</td>
+  <td class="comment"><% loc("Limit queue tickets can be shared from.") %></td>
+</tr>
 
 </table>
 
@@ -33,6 +41,7 @@
 $Create   => undef
 $Name     => ''
 $Receiver => ''
+$Queue    => 0
 </%ARGS>
 <%INIT>
 my @results;
@@ -40,9 +49,10 @@ my @results;
 if ( $Create ) {
     my $agreement = RT::NHD::Agreement->new( $session{'CurrentUser'} );
     my ($status, $msg) = $agreement->Create(
-        Name => $Name,
+        Name     => $Name,
         Receiver => $Receiver,
-        Sender => RT->Config->Get('NHD_WebURL'),
+        Sender   => RT->Config->Get('NHD_WebURL'),
+        Queue    => $Queue,
     );
     MaybeRedirectForResults(
         Path      => '/Admin/Tools/NHD/Modify.html',
