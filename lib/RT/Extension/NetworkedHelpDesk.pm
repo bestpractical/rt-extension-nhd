@@ -14,6 +14,8 @@ RT::Extension::NetworkedHelpDesk - Networked Help Desk protocol for Request Trac
 =cut
 
 use RT::NHD::Agreements;
+use RT::NHD::Ticket;
+
 use JSON::Any;
 use LWP::UserAgent;
 use HTTP::Request;

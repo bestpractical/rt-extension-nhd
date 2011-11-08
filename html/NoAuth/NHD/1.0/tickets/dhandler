@@ -1,0 +1,71 @@
+<%ARGS>
+$uuid => undef
+</%ARGS>
+<%INIT>
+my $tuuid = $m->dhandler_arg;
+unless ( RT::Extension::NetworkedHelpDesk->CheckUUID( $tuuid ) ) {
+    return RT::Extension::NetworkedHelpDesk->BadWebRequest(
+        'Unprocessable Entity',
+        "Value in the URI isn't a UUID"
+    );
+}
+
+my $action = RT::Extension::NetworkedHelpDesk->WebRequestAction;
+return RT::Extension::NetworkedHelpDesk->BadWebRequest('Method Not Allowed')
+    unless $action;
+
+my $token = $r->headers_in->{'X-Ticket-Sharing-Token'};
+return RT::Extension::NetworkedHelpDesk->BadWebRequest('Unauthorized')
+    unless $token;
+
+my ($auuid, $access_key) = split /:/, $token, 2;
+unless ( RT::Extension::NetworkedHelpDesk->CheckUUID( $auuid ) ) {
+    return RT::Extension::NetworkedHelpDesk->BadWebRequest(
+        'Unprocessable Entity',
+        "Value in the token isn't a UUID"
+    );
+}
+
+my $agreement = RT::NHD::Agreement->new( RT->SystemUser );
+$agreement->Load( $auuid );
+return RT::Extension::NetworkedHelpDesk->BadWebRequest(
+    'Forbidden', "No agreement $auuid"
+) unless $agreement->id;
+return RT::Extension::NetworkedHelpDesk->BadWebRequest(
+    'Forbidden', "Access key mismatch"
+) unless $access_key eq $agreement->AccessKey;
+return RT::Extension::NetworkedHelpDesk->BadWebRequest(
+    'Forbidden', "Agreement is ". $agreement->Status
+) unless $agreement->Status eq 'accepted';
+
+if ( $action ne 'create' ) {
+    $ARGS{'uuid'} = $uuid ||= $tuuid;
+} elsif ( ($uuid||'') ne $tuuid ) {
+    return RT::Extension::NetworkedHelpDesk->BadWebRequest(
+        'Unprocessable Entity',
+        "UUIDs in the URI and body don't match"
+    );
+}
+
+my $ticket = RT::NHD::Ticket->new( RT->SystemUser );
+$ticket->Load( $uuid );
+if ( $action eq 'create' && $ticket->id ) {
+    return RT::Extension::NetworkedHelpDesk->BadWebRequest(
+        'Unprocessable Entity',
+        "Couldn't create an agreement: record already exists"
+    );
+}
+elsif ( $action ne 'create' ) {
+    return RT::Extension::NetworkedHelpDesk->BadWebRequest('Not Found')
+        unless $ticket->id;
+}
+
+my $data = $ticket->FromJSON( \%ARGS );
+$data->{'Agreement'} = $agreement;
+
+return RT::Extension::NetworkedHelpDesk->ProcessRequest(
+    Object => $ticket,
+    Action => $action,
+    Data   => $data,
+);
+</%INIT>
