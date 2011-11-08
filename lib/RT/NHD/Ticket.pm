@@ -6,6 +6,9 @@ use base 'RT::Base';
 
 use Digest::SHA1 qw(sha1_hex);
 
+our @STATUSES = qw(open pending solved);
+our %STATUS_NHD2RT = ( open => 'open', pending => 'stalled', solved => 'resolved' );
+
 sub new {
     my $proto = shift;
     my $self = bless {}, ref($proto) || $proto;
@@ -92,7 +95,50 @@ sub Create {
     );
     $self->Ticket( $ticket );
 
+    $ticket->AddAttribute( Name => 'NHDUUID', Value => $args{'UUID'} );
+
     return ($id, $msg);
+}
+
+sub Update {
+    my $self = shift;
+    my %args = @_;
+
+    my $corresponds = delete $args{'Corresponds'};
+    my $actor = delete $args{'UpdatedBy'};
+
+    my $ticket = $self->Ticket;
+
+    if ( exists $args{'Status'} ) {
+        return $self->RollbackTransaction("Invalid status value")
+            unless grep $_ eq lc($args{'Status'}), @STATUSES;
+        $args{'Status'} = $STATUS_NHD2RT{ lc $args{'Status'} };
+        delete $args{'Status'} if $ticket->Status eq $args{'Status'};
+    }
+    foreach my $field ( qw(Status Subject) ) {
+        next unless exists $args{ $field };
+
+        my $cur = $ticket->$field();
+        my $new = $args{ $field };
+        next if (defined $new && !defined $cur)
+            || (!defined $new && defined $cur)
+            || $new ne $cur;
+
+        delete $args{ $field };
+    }
+
+    $RT::Handle->BeginTransaction;
+    foreach my $field ( qw(Status Subject) ) {
+        next unless exists $args{ $field };
+
+        my $method = "Set$field";
+        my ($status, $msg) = $ticket->$method( $args{ $field } );
+        return $self->RollbackTransaction( "Couldn't update $field: $msg" )
+            unless $status;
+    }
+    $RT::Handle->Commit;
+
+    return (1, 'Updated');
 }
 
 sub id { (shift)->Ticket->id }
@@ -108,6 +154,7 @@ our %FIELDS_MAP = (
     Created     => 'authored_at',
     Corresponds => 'comments',
     Name        => 'name',
+    UpdatedBy   => 'current_actor',
 );
 
 sub ForJSON {
@@ -164,6 +211,17 @@ sub LoadOrCreateUser {
     );
     return ($status, $msg) unless $status;
     return ($user, 'Created');
+}
+
+sub RollbackTransaction {
+    my $self = shift;
+    my $msg = shift;
+
+    $RT::Handle->Rollback if $self->_Handle->TransactionDepth;
+
+    $self->Ticket->Load( $self->id );
+
+    return (0, $msg);
 }
 
 1;

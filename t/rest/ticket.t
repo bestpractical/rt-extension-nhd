@@ -69,5 +69,23 @@ my $access_key = sha1_hex( ''. ++$i );
     ok $ticket && $ticket->id, 'created a ticket';
     is $ticket->Subject, 'test ticket';
     is $ticket->Status, 'open';
+
+    my $response = $m->json_request(
+        PUT => '/tickets/'. $uuid,
+        Headers => {
+            'X-Ticket-Sharing-Token' => "$auuid:$access_key",
+        },
+        Data => {
+            uuid => $uuid,
+            subject => 'another test ticket',
+            status => 'pending',
+        },
+    );
+    is( $response->code, 200, 'updated' );
+
+    my $ticket = $test->last_ticket;
+    ok $ticket && $ticket->id, 'created a ticket';
+    is $ticket->Subject, 'another test ticket';
+    is $ticket->Status, 'stalled';
 }
 

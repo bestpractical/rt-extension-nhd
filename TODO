@@ -13,3 +13,5 @@
 * add Queue to agreements where we receive
 ** don't allow admin to accept until it's filled
 *** done, test it
+
+* deal with users for tickets
