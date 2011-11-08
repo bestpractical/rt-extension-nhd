@@ -102,18 +102,19 @@ our %HTTP_MESSAGE = reverse %HTTP_CODE;
 sub BadWebRequest {
     my $self = shift;
     my $info = shift || 'Bad Request';
-    return $self->StopWebRequest( $info );
+    return $self->StopWebRequest( $info, @_ );
 }
 
 sub GoodWebRequest {
     my $self = shift;
     my $info = shift || 'OK';
-    return $self->StopWebRequest( $info );
+    return $self->StopWebRequest( $info, @_ );
 }
 
 sub StopWebRequest {
     my $self = shift;
     my $info = shift;
+    my $content = shift;
 
     my $code = $HTTP_CODE{ $info } or die "Bad status $info";
 
@@ -123,11 +124,14 @@ sub StopWebRequest {
         $r->headers_out->{'WWW-Authenticate'} = 'X-Ticket-Sharing';
     }
 
-    if ( $code =~ /^2..$/ ) {
-        $HTML::Mason::Commands::m->abort( $code );
-    } else {
-        $HTML::Mason::Commands::m->clear_and_abort( $code );
+    $HTML::Mason::Commands::m->clear_buffer if $content || $code !~ /^2..$/;
+
+    if ( $content ) {
+        $HTML::Mason::Commands::r->headers_out->{'Content-Type'}
+            = 'text/plain; charset="UTF-8"';
+        $HTML::Mason::Commands::m->out($content);
     }
+    $HTML::Mason::Commands::m->abort( $code );
 }
 
 my %METHOD_TO_ACTION = ( GET => 'show', POST => 'create', PUT => 'update' );
