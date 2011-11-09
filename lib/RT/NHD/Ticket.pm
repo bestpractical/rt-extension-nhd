@@ -95,7 +95,13 @@ sub Create {
     );
     $self->Ticket( $ticket );
 
-    $ticket->AddAttribute( Name => 'NHDUUID', Value => $args{'UUID'} );
+    (my $status, $msg) = $self->AddAttributes(
+        Object    => $ticket,
+        UUID      => $args{'UUID'},
+        Agreement => $agreement,
+    );
+    return ($status, "Couldn't add attribute: $msg")
+        unless $status;
 
     return ($id, $msg);
 }
@@ -143,6 +149,14 @@ sub Update {
 
 sub id { (shift)->Ticket->id }
 
+sub UUID {
+    my $self = shift;
+    my $agreement = shift;
+    my ($info) = $self->Ticket->Attributes->Named('NHD');
+    return undef unless $info;
+    return $info->{ $agreement->UUID } || $info->{''};
+}
+
 our %FIELDS_MAP = (
     Subject     => 'subject',
     Status      => 'status',
@@ -151,7 +165,7 @@ our %FIELDS_MAP = (
     Requestor   => 'requester',
     Creator     => 'author',
     Content     => 'body',
-    Created     => 'authored_at',
+    Updated     => 'authored_at',
     Corresponds => 'comments',
     Name        => 'name',
     UpdatedBy   => 'current_actor',
@@ -159,8 +173,23 @@ our %FIELDS_MAP = (
 
 sub ForJSON {
     my $self = shift;
+    my %args = @_;
+
+    my $ticket = $self->Ticket;
 
     my %res;
+    $res{'uuid'} = $self->UUID( $args{'Agreement'} );
+    $res{'subject'} = $ticket->Subject;
+    $res{'requested_at'} = $ticket->CreatedObj->XMLSchema;
+    $res{'status'} = $ticket->Status; # XXX: convert it
+
+    if ( my $requestor = $ticket->Requestors->UserMembersObj->First ) {
+        $res{'requester'} = $self->PresentUser(
+            User => $requestor, Agreement => $args{'Agreement'},
+        );
+    }
+
+    return \%res;
 }
 
 sub FromJSON {
@@ -173,10 +202,10 @@ sub FromJSON {
         while ( my ($k, $v) = each %FIELDS_MAP ) {
             next unless exists $args->{ $v };
             $res->{ $k } = $args->{ $v };
-            if ( $k eq 'Created' ) {
+            if ( $k eq 'Created' || $k eq 'Updated' ) {
                 my $date = RT::Date->new( RT->SystemUser );
                 $date->Set( Format => 'unknown', Value => $res->{ $k } );
-                $res->{ $k } = $date;
+                $res->{ $k } = $date->ISO;
             }
         };
         return $res;
@@ -210,7 +239,74 @@ sub LoadOrCreateUser {
         Comments => "Auto created by Networked Help Desk",
     );
     return ($status, $msg) unless $status;
+
+    ($status, $msg) = $self->AddAttributes(
+        Object => $user,
+        UUID => $args{'UUID'},
+        Agreement => $args{'Agreement'},
+    );
+    return ($status, "Couldn't add attribute: $msg") unless $status;
+
     return ($user, 'Created');
+}
+
+sub PresentUser {
+    my $self = shift;
+    my %args = @_%2? (User => @_) : @_;
+
+    my $user = $args{'User'};
+    my $info = ($user->Attributes->Named('NHD'))[0] || {};
+    my $uuid = $info->{ $args{'Agreement'}->UUID } || $info->{''};
+    unless ( $uuid ) {
+        $uuid = sha1_hex(
+            join '', 'users', $user->id, $user->Name, $user->EmailAddress
+        );
+        my ($status, $msg) = $self->AddAttributes(
+            NewObject => 0,
+            Object => $user,
+            UUID => $uuid,
+            Agreement => $args{'Agreement'},
+        );
+        $RT::Logger->error("Couldn't add attribute: $msg")
+            unless $status;
+    }
+
+    return {
+        uuid => $uuid,
+        name => $user->RealName || $user->EmailAddress || $user->Name,
+    };
+}
+
+sub AddAttributes {
+    my $self = shift;
+    my %args = (
+        Object    => undef,
+        UUID      => undef,
+        Agreement => undef,
+        NewObject => 1,
+        @_
+    );
+
+    if ( $args{'NewObject'} ) {
+        my ($status, $msg) = $args{'Object'}->AddAttribute(
+            Name => 'NHDUUID', Value => $args{'UUID'},
+        );
+        return ($status, $msg) unless $status;
+
+        return $args{'Object'}->AddAttribute(
+            Name => 'NHD',
+            Value => { $args{'Agreement'}->UUID => $args{'UUID'} },
+        );
+    } else {
+        my ($status, $msg) = $args{'Object'}->AddAttribute(
+            Name => 'NHDUUID', Value => $args{'UUID'},
+        );
+        return ($status, $msg) unless $status;
+
+        my ($info) = $args{'Object'}->Attributes->Named('NHD');
+        $info->{''} = $args{'UUID'};
+        return $args{'Object'}->SetAttribute( Name => 'NHD', Value => $info );
+    }
 }
 
 sub RollbackTransaction {

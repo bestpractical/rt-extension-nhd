@@ -27,7 +27,7 @@ sub ProcessRequest {
     my ($object, $action, $data) = @args{qw(Object Action Data)};
     if ( $object->id ) {
         if ( $action eq 'show' ) {
-            return $self->WebSendJSON( $object->ForJSON );
+            return $self->WebSendJSON( $object->ForJSON( %$data ) );
         }
         elsif ( $action eq 'update' ) {
             my ($status, $msg) = $object->Update( %$data );
@@ -179,7 +179,7 @@ use RT::Date;
             $res .= ' ' if $res;
             $res .= sprintf '%02d:%02d', $hour, $min;
             $res .= sprintf ':%02d', $sec if $args{'Seconds'};
-            $res .= sprintf "%s%02d:%02d", $self->_SplitOffset( $offset );
+            $res .= sprintf " %s%02d%02d", $self->_SplitOffset( $offset );
         }
 
         return $res;

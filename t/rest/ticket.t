@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+BEGIN { $ENV{TZ} = 'GMT' };
+
 use strict;
 use warnings;
 
@@ -70,7 +72,7 @@ my $access_key = sha1_hex( ''. ++$i );
     is $ticket->Subject, 'test ticket';
     is $ticket->Status, 'open';
 
-    my $response = $m->json_request(
+    $response = $m->json_request(
         PUT => '/tickets/'. $uuid,
         Headers => {
             'X-Ticket-Sharing-Token' => "$auuid:$access_key",
@@ -87,5 +89,28 @@ my $access_key = sha1_hex( ''. ++$i );
     ok $ticket && $ticket->id, 'created a ticket';
     is $ticket->Subject, 'another test ticket';
     is $ticket->Status, 'stalled';
+
+    $response = $m->json_request(
+        GET => '/tickets/'. $uuid,
+        Headers => {
+            'X-Ticket-Sharing-Token' => "$auuid:$access_key",
+        },
+    );
+
+    diag $response->content;
+    my $json = RT::Extension::NetworkedHelpDesk->FromJSON( $response->content );
+    is_deeply(
+        $json,
+        {
+            uuid => $uuid,
+            subject => 'test ticket',
+            requested_at => "2010-11-24 14:13:54 -0800",
+            status => 'open',
+            requester => {
+                uuid => sha1_hex( ''. $i ),
+                name => 'John Doe',
+            },
+        },
+    );
 }
 

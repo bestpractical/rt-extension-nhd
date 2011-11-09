@@ -16,3 +16,8 @@
 
 * There are two sections "Retrieving a Ticket Sharing Agreement"
   in the spec. Second one should be renamed - "Retrieving a Ticket".
+
+* Two fields (requested_at and authored_at) are defined as "a date
+  expressed in XML-schema format as a string". All examples use
+  completly different format that has nothing to do with XML schema:
+  http://www.w3.org/TR/xmlschema11-2/#vp-dateTimeCanRep
