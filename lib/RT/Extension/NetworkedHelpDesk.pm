@@ -153,6 +153,39 @@ sub WebSendJSON {
     return $self->GoodWebRequest( $status );
 }
 
+use RT::Date;
+{
+    package RT::Date;
+    sub XMLSchema {
+        my $self = shift;
+        my %args = (
+            Date => 1,
+            Time => 1,
+            Seconds => 1,
+            Timezone => 'user',
+            @_,
+        );
+        my ($sec,$min,$hour,$mday,$mon,$year,$wday,$ydaym,$isdst,$offset) =
+                                $self->Localtime( $args{'Timezone'} );
+
+        #the month needs incrementing, as gmtime returns 0-11
+        $mon++;
+
+        my $res = '';
+        if ( $args{'Date'} ) {
+            $res .= sprintf("%04d-%02d-%02d", $year, $mon, $mday);
+        }
+        if ( $args{'Time'} ) {
+            $res .= ' ' if $res;
+            $res .= sprintf '%02d:%02d', $hour, $min;
+            $res .= sprintf ':%02d', $sec if $args{'Seconds'};
+            $res .= sprintf "%s%02d:%02d", $self->_SplitOffset( $offset );
+        }
+
+        return $res;
+    }
+}
+
 =head1 AUTHOR
 
 Ruslan Zakirov E<lt>ruz@bestpractical.comE<gt>
