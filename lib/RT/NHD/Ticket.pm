@@ -152,9 +152,9 @@ sub id { (shift)->Ticket->id }
 sub UUID {
     my $self = shift;
     my $agreement = shift;
-    my ($info) = $self->Ticket->Attributes->Named('NHD');
-    return undef unless $info;
-    return $info->{ $agreement->UUID } || $info->{''};
+    return RT::Extension::NetworkedHelpDesk->ObjectUUID(
+        $self->Ticket, Agreement => $agreement,
+    );
 }
 
 our %FIELDS_MAP = (
@@ -255,8 +255,9 @@ sub PresentUser {
     my %args = @_%2? (User => @_) : @_;
 
     my $user = $args{'User'};
-    my $info = ($user->Attributes->Named('NHD'))[0] || {};
-    my $uuid = $info->{ $args{'Agreement'}->UUID } || $info->{''};
+    my $uuid = RT::Extension::NetworkedHelpDesk->ObjectUUID(
+        $user, Agreement => $args{'Agreement'},
+    );
     unless ( $uuid ) {
         $uuid = sha1_hex(
             join '', 'users', $user->id, $user->Name, $user->EmailAddress
@@ -289,23 +290,30 @@ sub AddAttributes {
 
     if ( $args{'NewObject'} ) {
         my ($status, $msg) = $args{'Object'}->AddAttribute(
-            Name => 'NHDUUID', Value => $args{'UUID'},
+            Name => 'NHDUUID', Content => $args{'UUID'},
         );
         return ($status, $msg) unless $status;
 
         return $args{'Object'}->AddAttribute(
             Name => 'NHD',
-            Value => { $args{'Agreement'}->UUID => $args{'UUID'} },
+            Content => { $args{'Agreement'}->UUID => $args{'UUID'} },
         );
     } else {
         my ($status, $msg) = $args{'Object'}->AddAttribute(
-            Name => 'NHDUUID', Value => $args{'UUID'},
+            Name => 'NHDUUID', Content => $args{'UUID'},
         );
         return ($status, $msg) unless $status;
 
-        my ($info) = $args{'Object'}->Attributes->Named('NHD');
-        $info->{''} = $args{'UUID'};
-        return $args{'Object'}->SetAttribute( Name => 'NHD', Value => $info );
+        my $attr = ($args{'Object'}->Attributes->Named('NHD'))[0];
+        unless ( $attr ) {
+            return $args{'Object'}->AddAttribute(
+                Name => 'NHD',
+                Content => { $args{'Agreement'}->UUID => $args{'UUID'} },
+            );
+        }
+        my %info = %{ $attr->Content || {} };
+        $info{''} = $args{'UUID'};
+        return $args{'Object'}->SetAttribute( Name => 'NHD', Content => \%info );
     }
 }
 

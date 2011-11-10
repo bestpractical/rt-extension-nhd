@@ -65,6 +65,18 @@ sub CheckUUID {
     return 1;
 }
 
+sub ObjectUUID {
+    my $self = shift;
+    my %args = @_%2? ( Object => @_ ) : (@_);
+
+    my ($info) = $args{'Object'}->Attributes->Named('NHD');
+    return undef unless $info;
+    $info = $info->Content || {};
+    my $res;
+    $res = $info->{ $args{'Agreement'}->UUID } if $args{'Agreement'};
+    return $res || $info->{''};
+}
+
 sub JSONRequest {
     my $self = shift;
     my ($method, $uri, %args) = @_;
