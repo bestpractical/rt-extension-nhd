@@ -168,7 +168,7 @@ sub WebSendJSON {
 use RT::Date;
 {
     package RT::Date;
-    sub XMLSchema {
+    sub NHD {
         my $self = shift;
         my %args = (
             Date => 1,

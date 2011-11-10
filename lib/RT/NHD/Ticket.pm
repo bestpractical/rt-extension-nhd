@@ -180,7 +180,7 @@ sub ForJSON {
     my %res;
     $res{'uuid'} = $self->UUID( $args{'Agreement'} );
     $res{'subject'} = $ticket->Subject;
-    $res{'requested_at'} = $ticket->CreatedObj->XMLSchema;
+    $res{'requested_at'} = $ticket->CreatedObj->NHD;
     $res{'status'} = $ticket->Status; # XXX: convert it
 
     if ( my $requestor = $ticket->Requestors->UserMembersObj->First ) {
@@ -203,8 +203,13 @@ sub FromJSON {
             next unless exists $args->{ $v };
             $res->{ $k } = $args->{ $v };
             if ( $k eq 'Created' || $k eq 'Updated' ) {
+                my $shift;
+                if ( $res->{ $k } =~ s/\s*(?:([+-])([0-9]{2}):?([0-9]{2})|Z)$//i && ($2||$3) ) {
+                    $shift = ($2*60+$3)*60* ($1 eq '-'? -1 : 1);
+                }
                 my $date = RT::Date->new( RT->SystemUser );
-                $date->Set( Format => 'unknown', Value => $res->{ $k } );
+                $date->Set( Format => 'ISO', Value => $res->{ $k } );
+                $date->AddSeconds( -$shift ) if $shift;
                 $res->{ $k } = $date->ISO;
             }
         };

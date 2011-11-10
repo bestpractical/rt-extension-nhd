@@ -1,13 +1,14 @@
 #!/usr/bin/perl
 
-BEGIN { $ENV{TZ} = 'GMT' };
-
 use strict;
 use warnings;
 
 use RT::Extension::NetworkedHelpDesk::Test tests => 13;
 my $test = 'RT::Extension::NetworkedHelpDesk::Test';
 use Digest::SHA1 qw(sha1_hex);
+
+BEGIN { $ENV{TZ} = 'GMT' };
+RT->Config->Set('Timezone' => 'GMT');
 
 $test->started_ok;
 
@@ -104,7 +105,7 @@ my $access_key = sha1_hex( ''. ++$i );
         {
             uuid => $uuid,
             subject => 'test ticket',
-            requested_at => "2010-11-24 14:13:54 -0800",
+            requested_at => "2010-11-24 22:13:54 +0000",
             status => 'open',
             requester => {
                 uuid => sha1_hex( ''. $i ),
