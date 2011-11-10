@@ -20,6 +20,26 @@ Set( $NHD_WebURL, RT->Config->Get('WebURL') . 'NoAuth/NHD/1.0' );
 
 Set( $NHD_Name, RT->Config->Get('Organization') );
 
+=item C<$NHD_StatusMap>
+
+=cut
+
+Set( %NHD_StatusMap,
+    'NHD -> default' => {
+        open     => 'open',
+        pending  => 'stalled',
+        closed   => 'resolved',
+    },
+    'default -> NHD' => {
+        new      => 'open',
+        open     => 'open',
+        stalled  => 'pending',
+        resolved => 'closed',
+        rejected => 'closed',
+        deleted  => 'closed',
+    },
+);
+
 =back
 
 =cut

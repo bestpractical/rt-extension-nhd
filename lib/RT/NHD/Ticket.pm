@@ -75,6 +75,12 @@ sub Create {
         return (0, "Agreement has no queue defined");
     }
 
+    ($args{'Status'}, my $msg) = $self->ConvertRemoteStatus(
+        Status => $args{'Status'}, Queue => $queue,
+    );
+    return (0, "Couldn't convert status: $msg")
+        unless $args{'Status'};
+
     if ( ref $args{'Requestor'} eq 'HASH') {
         my ($user, $msg) = $self->LoadOrCreateUser(
             %{ $args{'Requestor'} },
@@ -89,7 +95,7 @@ sub Create {
     my $corresponds = delete $args{'Corresponds'};
 
     my $ticket = RT::Ticket->new( $self->CurrentUser );
-    my ($id, $txn, $msg) = $ticket->Create(
+    (my $id, undef, $msg) = $ticket->Create(
         %args,
         Queue => $queue,
     );
@@ -116,10 +122,11 @@ sub Update {
     my $ticket = $self->Ticket;
 
     if ( exists $args{'Status'} ) {
-        return $self->RollbackTransaction("Invalid status value")
-            unless grep $_ eq lc($args{'Status'}), @STATUSES;
-        $args{'Status'} = $STATUS_NHD2RT{ lc $args{'Status'} };
-        delete $args{'Status'} if $ticket->Status eq $args{'Status'};
+        ($args{'Status'}, my $msg) = $self->ConvertRemoteStatus(
+            Status => $args{'Status'}
+        );
+        return $self->RollbackTransaction("Couldn't convert status: $msg")
+            unless $args{'Status'};
     }
     foreach my $field ( qw(Status Subject) ) {
         next unless exists $args{ $field };
@@ -146,6 +153,7 @@ sub Update {
 
     return (1, 'Updated');
 }
+
 
 sub id { (shift)->Ticket->id }
 
@@ -181,7 +189,7 @@ sub ForJSON {
     $res{'uuid'} = $self->UUID( $args{'Agreement'} );
     $res{'subject'} = $ticket->Subject;
     $res{'requested_at'} = $ticket->CreatedObj->NHD;
-    $res{'status'} = $ticket->Status; # XXX: convert it
+    $res{'status'} = $self->ConvertLocalStatus;
 
     if ( my $requestor = $ticket->Requestors->UserMembersObj->First ) {
         $res{'requester'} = $self->PresentUser(
@@ -226,6 +234,49 @@ sub FromJSON {
     }
 
     return $res;
+}
+
+sub ConvertRemoteStatus {
+    my $self = shift;
+    my %args = (
+        Status => undef,
+        Queue => undef,
+        @_
+    );
+    return (undef, "no value") unless $args{'Status'};
+    return (undef, "invalid value") unless grep $args{'Status'} eq $_, @STATUSES;
+
+    my $queue = $self->id ? $self->Ticket->QueueObj : $args{'Queue'};
+    my $map_name = 'NHD -> '. $queue->Lifecycle->Name;
+    return $self->ConvertStatus( $map_name => $args{'Status'} );
+}
+
+sub ConvertLocalStatus {
+    my $self = shift;
+    my %args = (
+        Status => undef,
+        @_
+    );
+    my $ticket = $self->Ticket;
+    $args{'Status'} ||= $ticket->Status;
+
+    my $map_name = $ticket->QueueObj->Lifecycle->Name .' -> NHD';
+    return $self->ConvertStatus( $map_name => $args{'Status'} );
+}
+
+sub ConvertStatus {
+    my $self     = shift;
+    my $map_name = shift;
+    my $status   = shift;
+
+    my $map = RT->Config->Get('NHD_StatusMap')->{ $map_name };
+    return (undef, "no map in \%NHD_StatusMap for '$map_name'")
+        unless $map;
+
+    my $res = $map->{ $status };
+    return (undef, "no mapping for '$status' in '$map_name' map")
+        unless $res;
+    return ($res);
 }
 
 sub LoadOrCreateUser {

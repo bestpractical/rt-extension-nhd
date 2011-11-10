@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use RT::Extension::NetworkedHelpDesk::Test tests => 13;
+use RT::Extension::NetworkedHelpDesk::Test tests => 18;
 my $test = 'RT::Extension::NetworkedHelpDesk::Test';
 use Digest::SHA1 qw(sha1_hex);
 
@@ -98,15 +98,14 @@ my $access_key = sha1_hex( ''. ++$i );
         },
     );
 
-    diag $response->content;
     my $json = RT::Extension::NetworkedHelpDesk->FromJSON( $response->content );
     is_deeply(
         $json,
         {
             uuid => $uuid,
-            subject => 'test ticket',
+            subject => 'another test ticket',
             requested_at => "2010-11-24 22:13:54 +0000",
-            status => 'open',
+            status => 'pending',
             requester => {
                 uuid => sha1_hex( ''. $i ),
                 name => 'John Doe',
